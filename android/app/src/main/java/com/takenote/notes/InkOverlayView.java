@@ -6,9 +6,12 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.os.Build;
+import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebView;
+import androidx.input.motionprediction.MotionEventPredictor;
 import java.util.ArrayList;
 
 /**
@@ -17,24 +20,33 @@ import java.util.ArrayList;
  * all'app web, che aggiunge il tratto alla pagina; questa vista lo cancella quando quello della
  * pagina è pronto a comparire, così non ci sono sfarfallii.
  *
- * Interviene solo se l'app l'ha abilitata e il tocco della penna cade su una pagina fuori dalle zone
- * riservate all'interfaccia; in tutti gli altri casi l'evento arriva al WebView come sempre.
+ * Riceve da InputRouter solo eventi della penna. Interviene se l'app l'ha abilitata e il tocco cade
+ * su una pagina fuori dalle zone riservate all'interfaccia; altrimenti l'evento va al WebView.
+ *
+ * Il tratto è una curva che passa per i punti medi dei campioni (stessa costruzione di
+ * polylinePath in ink.js, così prima e dopo il rilascio coincidono). La punta può essere allungata
+ * di qualche millisecondo con la previsione del movimento: è solo disegnata, mai salvata.
  */
 public class InkOverlayView extends View {
 
     private static final long CLEAR_FALLBACK_MS = 1500;
-    // -1 è un id valido (eventi iniettati o virtuali): serve un valore che nessun dispositivo può avere
-    private static final int NO_DEVICE = Integer.MIN_VALUE;
+    private static final int CHUNK_POINTS = 48;
+    private static final float MAX_PREDICTION_DP = 28f;
 
     private static final class Stroke {
         final int id;
-        final Path path = new Path();
         final Paint paint;
+        final int alpha;
         final RectF clip;
+        // pezzi già chiusi del tratto: non cambiano più, così ogni fotogramma ricalcola solo la coda
+        final ArrayList<Path> frozen = new ArrayList<>();
+        Path tail = new Path();
+        int tailPoints;
 
-        Stroke(int id, Paint paint, RectF clip) {
+        Stroke(int id, Paint paint, int alpha, RectF clip) {
             this.id = id;
             this.paint = paint;
+            this.alpha = alpha;
             this.clip = clip;
         }
     }
@@ -43,8 +55,12 @@ public class InkOverlayView extends View {
     private final ArrayList<Stroke> strokes = new ArrayList<>();
     private final int[] webLoc = new int[2];
     private final int[] selfLoc = new int[2];
+    private final Path tip = new Path();
+    private final MotionEventPredictor predictor;
+    private final float maxPrediction;
 
     private boolean enabled = false;
+    private boolean predict = true;
     private int color = Color.BLACK;
     private float width = 4f;
     private float dpr = 1f;
@@ -52,54 +68,54 @@ public class InkOverlayView extends View {
     private float[] excl = new float[0];
 
     private Stroke active;
-    private int activePointer = -1;
-    private int activeDevice = NO_DEVICE;
-    private int otherDevice = NO_DEVICE;
-    private boolean swallowing = false;
     private int nextId = 1;
     private float[] points = new float[2048];
     private int count = 0;
+    // ultimo campione e ultimo punto medio, in coordinate di questa vista
     private float lastX;
     private float lastY;
+    private float midX;
+    private float midY;
+    private int samples;
+    private float[] predicted = new float[32];
+    private int predictedCount = 0;
 
     public InkOverlayView(Context context, WebView webView) {
         super(context);
         this.webView = webView;
+        this.predictor = MotionEventPredictor.newInstance(this);
+        this.maxPrediction = MAX_PREDICTION_DP * context.getResources().getDisplayMetrics().density;
         setWillNotDraw(false);
         setClickable(false);
         setFocusable(false);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        if (Build.VERSION.SDK_INT >= 35) setRequestedFrameRate(REQUESTED_FRAME_RATE_CATEGORY_HIGH);
     }
 
-    public void configure(boolean enabled, int color, float width, float dpr, float[] pages, float[] excl) {
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        // campioni consegnati appena arrivano, senza aspettare il fotogramma successivo
+        if (Build.VERSION.SDK_INT >= 30) requestUnbufferedDispatch(InputDevice.SOURCE_CLASS_POINTER);
+    }
+
+    public void configure(boolean enabled, int color, float width, float dpr, float[] pages, float[] excl, boolean predict) {
         this.enabled = enabled;
         this.color = color;
         this.width = width;
         this.dpr = dpr > 0 ? dpr : 1f;
         this.pages = pages;
         this.excl = excl;
+        this.predict = predict;
     }
 
-    /** @return true se l'evento è stato consumato qui e non deve arrivare al WebView */
+    /** @return true se il tratto della penna è gestito qui e non deve arrivare al WebView */
     public boolean handle(MotionEvent ev) {
         int action = ev.getActionMasked();
-        int device = ev.getDeviceId();
-
-        // tocchi di un altro dispositivo iniziati durante il tratto (il palmo): spariscono interi
-        if (device == otherDevice) {
-            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) otherDevice = NO_DEVICE;
-            return true;
-        }
-        if (swallowing && device != activeDevice) {
-            if (action == MotionEvent.ACTION_DOWN) otherDevice = device;
-            return true;
-        }
-        if (swallowing) {
+        if (active != null) {
             continueStroke(ev, action);
-            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) swallowing = false;
             return true;
         }
-
         if (!enabled || action != MotionEvent.ACTION_DOWN || ev.getToolType(0) != MotionEvent.TOOL_TYPE_STYLUS) return false;
         webView.getLocationInWindow(webLoc);
         getLocationInWindow(selfLoc);
@@ -108,10 +124,7 @@ public class InkOverlayView extends View {
         if (rectAt(excl, cssX, cssY) >= 0) return false;
         int page = rectAt(pages, cssX, cssY);
         if (page < 0) return false;
-
         startStroke(ev, page);
-        swallowing = true;
-        activeDevice = device;
         return true;
     }
 
@@ -131,49 +144,62 @@ public class InkOverlayView extends View {
             pages[page + 2] * dpr + ox,
             pages[page + 3] * dpr + oy
         );
+        // il colore è sempre pieno: la trasparenza (evidenziatore) si applica all'intero tratto in onDraw
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setStrokeJoin(Paint.Join.ROUND);
         paint.setStrokeWidth(width);
-        paint.setColor(color);
-        active = new Stroke(nextId++, paint, clip);
+        paint.setColor(color | 0xFF000000);
+        active = new Stroke(nextId++, paint, Color.alpha(color), clip);
         strokes.add(active);
-        activePointer = ev.getPointerId(0);
         count = 0;
+        samples = 1;
+        predictedCount = 0;
         float x = ev.getX(), y = ev.getY();
-        active.path.moveTo(x - selfLoc[0], y - selfLoc[1]);
-        // segmento minuscolo: anche un tocco singolo lascia un puntino
-        active.path.lineTo(x - selfLoc[0] + 0.01f, y - selfLoc[1]);
+        lastX = midX = x - selfLoc[0];
+        lastY = midY = y - selfLoc[1];
+        active.tail.moveTo(lastX, lastY);
+        active.tailPoints = 0;
         store(x, y);
-        lastX = x;
-        lastY = y;
+        if (predict) predictor.record(ev);
         emit("{phase:'down'}");
         invalidate();
     }
 
     private void continueStroke(MotionEvent ev, int action) {
-        if (active == null) return;
-        int index = ev.findPointerIndex(activePointer);
-        if (index >= 0 && action == MotionEvent.ACTION_MOVE) {
+        if (predict) predictor.record(ev);
+        if (action == MotionEvent.ACTION_MOVE) {
             int history = ev.getHistorySize();
-            for (int h = 0; h < history; h++) add(ev.getHistoricalX(index, h), ev.getHistoricalY(index, h));
-            add(ev.getX(index), ev.getY(index));
+            for (int h = 0; h < history; h++) add(ev.getHistoricalX(h), ev.getHistoricalY(h));
+            add(ev.getX(), ev.getY());
+            updatePrediction();
             invalidate();
-        }
-        boolean penLifted = action == MotionEvent.ACTION_POINTER_UP && ev.getActionIndex() == index;
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL || penLifted) {
-            if (index >= 0 && action != MotionEvent.ACTION_CANCEL) add(ev.getX(index), ev.getY(index));
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            if (action == MotionEvent.ACTION_UP) add(ev.getX(), ev.getY());
             finishStroke();
         }
     }
 
     private void add(float x, float y) {
-        float dx = x - lastX, dy = y - lastY;
+        float vx = x - selfLoc[0], vy = y - selfLoc[1];
+        float dx = vx - lastX, dy = vy - lastY;
         if (dx * dx + dy * dy < 0.25f) return;
-        lastX = x;
-        lastY = y;
-        active.path.lineTo(x - selfLoc[0], y - selfLoc[1]);
+        float mx = (lastX + vx) / 2f, my = (lastY + vy) / 2f;
+        Stroke s = active;
+        if (samples == 1) s.tail.lineTo(mx, my);
+        else s.tail.quadTo(lastX, lastY, mx, my);
+        if (++s.tailPoints >= CHUNK_POINTS) {
+            s.frozen.add(s.tail);
+            s.tail = new Path();
+            s.tail.moveTo(mx, my);
+            s.tailPoints = 0;
+        }
+        lastX = vx;
+        lastY = vy;
+        midX = mx;
+        midY = my;
+        samples++;
         store(x, y);
     }
 
@@ -187,10 +213,33 @@ public class InkOverlayView extends View {
         points[count++] = (y - webLoc[1]) / dpr;
     }
 
+    // Punti previsti oltre la punta: accorciano il ritardo percepito. Scartati se troppo lontani.
+    private void updatePrediction() {
+        predictedCount = 0;
+        if (!predict) return;
+        MotionEvent p = predictor.predict();
+        if (p == null) return;
+        float px = lastX, py = lastY, length = 0;
+        int n = p.getHistorySize();
+        for (int h = 0; h <= n && predictedCount + 2 <= predicted.length; h++) {
+            float x = (h < n ? p.getHistoricalX(h) : p.getX()) - selfLoc[0];
+            float y = (h < n ? p.getHistoricalY(h) : p.getY()) - selfLoc[1];
+            length += (float) Math.hypot(x - px, y - py);
+            if (length > maxPrediction) break;
+            predicted[predictedCount++] = x;
+            predicted[predictedCount++] = y;
+            px = x;
+            py = y;
+        }
+        p.recycle();
+    }
+
     private void finishStroke() {
         final Stroke done = active;
+        // chiude la curva sull'ultimo campione reale
+        done.tail.lineTo(lastX + (samples == 1 ? 0.01f : 0f), lastY);
         active = null;
-        activePointer = -1;
+        predictedCount = 0;
         StringBuilder json = new StringBuilder(count * 8 + 48);
         json.append("{phase:'up',id:").append(done.id).append(",points:[");
         for (int i = 0; i < count; i++) {
@@ -235,10 +284,19 @@ public class InkOverlayView extends View {
     protected void onDraw(Canvas canvas) {
         for (int i = 0; i < strokes.size(); i++) {
             Stroke s = strokes.get(i);
-            canvas.save();
+            int save = s.alpha < 255 ? canvas.saveLayerAlpha(s.clip, s.alpha) : canvas.save();
             canvas.clipRect(s.clip);
-            canvas.drawPath(s.path, s.paint);
-            canvas.restore();
+            for (int k = 0; k < s.frozen.size(); k++) canvas.drawPath(s.frozen.get(k), s.paint);
+            canvas.drawPath(s.tail, s.paint);
+            if (s == active) {
+                // dal punto medio all'ultimo campione, più la punta prevista
+                tip.rewind();
+                tip.moveTo(midX, midY);
+                tip.lineTo(lastX + (samples == 1 ? 0.01f : 0f), lastY);
+                for (int k = 0; k + 1 < predictedCount; k += 2) tip.lineTo(predicted[k], predicted[k + 1]);
+                canvas.drawPath(tip, s.paint);
+            }
+            canvas.restoreToCount(save);
         }
     }
 }

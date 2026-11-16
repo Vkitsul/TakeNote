@@ -22,6 +22,8 @@ const DEFAULTS = {
   snip: { mode: 'rect' },
   shapeHold: false,
   nativeInk: true, // tratto in corso disegnato da un livello nativo Android (molto più reattivo del WebView)
+  predict: true, // la punta del tratto anticipa di qualche millisecondo il movimento della penna
+  palm: 'strong', // rifiuto del palmo: 'normal' | 'strong' | 'two' (si scorre solo con due dita)
   fingerDraw: false,
   twoFingerUndo: true,
   pressure: 1, // esponente della curva di pressione (<1 = più sensibile)

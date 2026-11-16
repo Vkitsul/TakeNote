@@ -40,6 +40,7 @@ export class PagesPanel {
   open() {
     this.ed.snipsPanel.close()
     this.isOpen = true
+    this.ed.indShown = -1
     this.el.classList.add('open')
     this.ed.nativeInk?.sync()
     this.refresh()

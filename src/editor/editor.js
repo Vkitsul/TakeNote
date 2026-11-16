@@ -25,6 +25,8 @@ import { TEMPLATES, PAPERS } from '../templates.js'
 import { toast, menu, openDialog, promptDialog, progressDialog, slider, toggle, closePopover } from '../ui.js'
 import { icon } from '../icons.js'
 import { onTheme, isDark, setDark } from '../theme.js'
+import { applyPalm, PALM_MODES } from '../palm.js'
+import { segmented } from '../ui.js'
 
 let clipboard = null // condiviso tra quaderni
 
@@ -84,7 +86,7 @@ export class Editor {
     this.view.handlers = {
       twoFingerTap: () => settings.twoFingerUndo && this.undo(),
       threeFingerTap: () => settings.twoFingerUndo && this.redo(),
-      doubleTap: (x, y) => this.view.toggleFit(x, y),
+      doubleTap: (x, y) => settings.palm !== 'two' && this.view.toggleFit(x, y),
       tap: () => this.selection.drop(),
     }
     this.unsubCam = this.view.onCamera(() => this.updateIndicator())
@@ -194,7 +196,7 @@ export class Editor {
       this.lastPen = performance.now()
       // tasto premuto con la penna sospesa: non è un tocco sullo schermo
       if (!(e.pressure > 0) && !(e.buttons & 33)) return
-      this.view.cancelTouches()
+      this.view.cancelTouches(true)
     }
     this.startTool(e)
   }
@@ -389,10 +391,15 @@ export class Editor {
     return this.view.currentIndex()
   }
 
+  // Chiamata a ogni movimento della pagina: tocca il DOM solo quando il numero cambia.
   updateIndicator() {
     const n = this.doc.pages.length
-    this.pageInd.textContent = `${Math.min(n, this.currentIndex() + 1)} / ${n}`
-    this.pagesPanel?.markCurrent(this.currentIndex())
+    const i = this.currentIndex()
+    if (this.indShown === i && this.indCount === n) return
+    this.indShown = i
+    this.indCount = n
+    this.pageInd.textContent = `${Math.min(n, i + 1)} / ${n}`
+    this.pagesPanel?.markCurrent(i)
   }
 
   async goToPagePrompt() {
@@ -757,6 +764,14 @@ export function openSettingsDialog() {
         onInput: (v) => { settings.pressure = v; saveSettings() },
       }),
       isNative ? toggle('Scrittura veloce (livello nativo Android)', settings.nativeInk, (v) => { settings.nativeInk = v; saveSettings() }) : null,
+      isNative ? toggle('Previsione del tratto (punta più reattiva)', settings.predict, (v) => { settings.predict = v; saveSettings() }) : null,
+      h('div', { class: 'pop-title' }, 'Rifiuto del palmo'),
+      segmented(PALM_MODES, settings.palm, (v) => {
+        settings.palm = v
+        saveSettings()
+        applyPalm()
+      }),
+      h('p', { class: 'muted small' }, 'Forte: ignora la mano mentre la penna scrive, è vicina allo schermo o ha appena scritto lì accanto. Due dita: in più, un dito solo non scorre mai la pagina (scorri e ingrandisci con due dita). Normale: solo mentre la penna scrive e subito dopo.'),
       toggle('Disegna anche con il dito', settings.fingerDraw, (v) => { settings.fingerDraw = v; saveSettings() }),
       toggle('Tocco con 2 dita = Annulla, 3 dita = Ripeti', settings.twoFingerUndo, (v) => { settings.twoFingerUndo = v; saveSettings() }),
       toggle('Tieni premuto a fine tratto per creare forme', settings.shapeHold, (v) => { settings.shapeHold = v; saveSettings() }),

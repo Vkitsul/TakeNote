@@ -4,7 +4,8 @@
 import { h, clamp } from '../util.js'
 import { drawItems } from '../ink.js'
 import { drawTemplate } from '../templates.js'
-import { renderPdfRegion, isCancel } from '../pdfdoc.js'
+import { renderPdfRegion, isCancel, setPdfRenderSlow } from '../pdfdoc.js'
+import { settings } from '../settings.js'
 import { onImageLoad } from '../images.js'
 import { displayPaper, isDark, DARK_FILTER } from '../theme.js'
 
@@ -13,6 +14,9 @@ const PAD = 22
 const ADD_H = 64
 const BASE_MAX_PX = 6e6
 const DETAIL_PAD = 0.12
+const PAN_SLOP = 8 // px: sotto questa soglia un dito fermo (o la mano appoggiata) non muove la pagina
+const ZOOM_DEADZONE = 0.06 // due dita che scorrono non cambiano lo zoom per piccole variazioni
+const REVERT_MAX_PX = 140
 
 const tierRes = (r) => Math.pow(2, Math.ceil(Math.log2(Math.max(r, 0.05)) * 2 - 1e-6) / 2)
 
@@ -181,8 +185,9 @@ class PageView {
     return Math.min(tierRes(target), cap)
   }
 
-  ensureBase(target, prio) {
-    const res = this.baseResFor(target)
+  // draft: pagina montata mentre si scorre, a mezza risoluzione; a pagina ferma viene rifinita
+  ensureBase(target, prio, draft = false) {
+    const res = this.baseResFor(target) * (draft && !this.page.pdf ? 0.5 : 1)
     if (!this.base) {
       this.base = new Layer(this, { x: 0, y: 0, w: this.page.w, h: this.page.h }, res, false)
       this.el.prepend(this.base.canvas)
@@ -298,6 +303,8 @@ export class View {
     this.lastTap = null
     this.handlers = {}
     this.isBusy = () => false // true mentre si scrive: i lavori pesanti aspettano
+    this.moving = false
+    this.qualityRaf = 0
     this.unsub = [
       doc.on('items', (pageId, change) => this.onItems(pageId, change)),
       doc.on('pages', (ev) => this.onPages(ev)),
@@ -313,7 +320,9 @@ export class View {
     this.ro.disconnect()
     this.unsub.forEach((f) => f())
     cancelAnimationFrame(this.fling)
+    cancelAnimationFrame(this.qualityRaf)
     clearTimeout(this.idleTimer)
+    setPdfRenderSlow(false)
     for (const pv of this.views.values()) pv.destroy()
     this.views.clear()
     releaseCanvas(this.live)
@@ -423,6 +432,10 @@ export class View {
   }
 
   cameraChanged() {
+    if (!this.moving) {
+      this.moving = true
+      setPdfRenderSlow(true) // il PDF si disegna a piccoli passi finché la pagina si muove
+    }
     for (const fn of this.camListeners) fn()
     if (!this.mountRaf) {
       this.mountRaf = requestAnimationFrame(() => {
@@ -560,7 +573,7 @@ export class View {
         this.world.append(pv.el)
         this.views.set(e.page.id, pv)
         const visible = e.y < v.y + v.h && e.y + e.h > v.y
-        pv.ensureBase(target, visible ? 0 : 1)
+        pv.ensureBase(target, visible ? 0 : 1, this.moving)
       } else if (pv && (e.y > keepHi || e.y + e.h < keepLo)) {
         pv.destroy()
         this.views.delete(e.page.id)
@@ -574,24 +587,47 @@ export class View {
     }
   }
 
+  // Pagina ferma: le pagine visibili si rifiniscono subito, le altre una per fotogramma.
   updateQuality() {
     if (!this.ready) return
+    this.moving = false
+    setPdfRenderSlow(false)
     this.updateMount()
     const v = this.visibleWorld()
     const target = this.s * this.dpr
+    const later = []
     for (const pv of this.views.values()) {
       const e = this.entryById.get(pv.page.id)
       if (!e) continue
       const visible = e.y < v.y + v.h && e.y + e.h > v.y && e.x < v.x + v.w && e.x + e.w > v.x
-      pv.ensureBase(target, visible ? 0 : 1)
-      if (visible) {
-        const x0 = Math.max(v.x, e.x) - e.x
-        const y0 = Math.max(v.y, e.y) - e.y
-        const x1 = Math.min(v.x + v.w, e.x + e.w) - e.x
-        const y1 = Math.min(v.y + v.h, e.y + e.h) - e.y
-        pv.updateDetail(target, { x: x0, y: y0, w: x1 - x0, h: y1 - y0 })
-      } else pv.dropDetail()
+      if (!visible) {
+        later.push(pv)
+        continue
+      }
+      pv.ensureBase(target, 0)
+      const x0 = Math.max(v.x, e.x) - e.x
+      const y0 = Math.max(v.y, e.y) - e.y
+      const x1 = Math.min(v.x + v.w, e.x + e.w) - e.x
+      const y1 = Math.min(v.y + v.h, e.y + e.h) - e.y
+      pv.updateDetail(target, { x: x0, y: y0, w: x1 - x0, h: y1 - y0 })
     }
+    cancelAnimationFrame(this.qualityRaf)
+    const step = () => {
+      this.qualityRaf = 0
+      if (this.moving) return // riparte al prossimo arresto
+      if (this.isBusy()) {
+        this.qualityRaf = requestAnimationFrame(step)
+        return
+      }
+      const pv = later.shift()
+      if (!pv) return
+      if (this.views.get(pv.page.id) === pv) {
+        pv.ensureBase(target, 1)
+        pv.dropDetail()
+      }
+      if (later.length) this.qualityRaf = requestAnimationFrame(step)
+    }
+    if (later.length) this.qualityRaf = requestAnimationFrame(step)
   }
 
   // --- Eventi dal modello ---
@@ -656,10 +692,26 @@ export class View {
     this.fling = 0
   }
 
-  cancelTouches() {
+  // revert: il gesto era la mano appoggiata prima della penna, quindi la pagina torna dov'era
+  cancelTouches(revert = false) {
+    const g = this.gesture
     this.touches.clear()
     this.gesture = null
     this.stopFling()
+    if (revert && g) this.revertGesture(g)
+  }
+
+  // Solo per piccoli spostamenti: uno scorrimento lungo è voluto e resta.
+  revertGesture(g) {
+    const c = g.cam0
+    if (!c) return
+    if (Math.abs(this.tx - c.tx) < REVERT_MAX_PX && Math.abs(this.ty - c.ty) < REVERT_MAX_PX && Math.abs(this.s / c.s - 1) < 0.08) {
+      this.setCamera(c.s, c.tx, c.ty)
+    }
+  }
+
+  twoFingerScroll() {
+    return settings.palm === 'two'
   }
 
   touchDown(e) {
@@ -667,7 +719,7 @@ export class View {
     this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
     const n = this.touches.size
     if (n === 1) {
-      this.gesture = { maxTouches: 1, t0: e.timeStamp, moved: false, sx: e.clientX, sy: e.clientY, samples: [] }
+      this.gesture = { maxTouches: 1, t0: e.timeStamp, moved: false, sx: e.clientX, sy: e.clientY, samples: [], cam0: { s: this.s, tx: this.tx, ty: this.ty } }
     } else if (this.gesture) {
       this.gesture.maxTouches = Math.max(this.gesture.maxTouches, n)
     }
@@ -685,6 +737,9 @@ export class View {
       g.samples = []
     } else if (pts.length >= 2) {
       g.mode = 'pinch'
+      g.slopDone = true
+      g.zooming = false
+      g.samples = []
       const [a, b] = pts
       g.d0 = Math.max(10, Math.hypot(a.x - b.x, a.y - b.y))
       g.s0 = this.s
@@ -701,6 +756,14 @@ export class View {
     t.y = e.clientY
     if (!g.moved && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 10) g.moved = true
     if (g.mode === 'pan' && this.touches.size === 1) {
+      if (this.twoFingerScroll()) return
+      if (!g.slopDone) {
+        if (Math.hypot(t.x - g.sx, t.y - g.sy) < PAN_SLOP) return
+        g.slopDone = true
+        g.lx = t.x
+        g.ly = t.y
+        return
+      }
       const dx = t.x - g.lx, dy = t.y - g.ly
       g.lx = t.x
       g.ly = t.y
@@ -711,9 +774,16 @@ export class View {
       const [a, b] = [...this.touches.values()]
       const d = Math.hypot(a.x - b.x, a.y - b.y)
       if (Math.abs(d - g.d0) > 12) g.moved = true
+      if (!g.zooming && Math.abs(d / g.d0 - 1) > ZOOM_DEADZONE) {
+        g.zooming = true
+        g.d0 = d // lo zoom parte da qui, senza scatti
+        g.s0 = this.s
+      }
       const mx = (a.x + b.x) / 2 - this.left, my = (a.y + b.y) / 2 - this.top
-      const ns = clamp((g.s0 * d) / g.d0, this.minScale, this.maxScale)
+      const ns = g.zooming ? clamp((g.s0 * d) / g.d0, this.minScale, this.maxScale) : this.s
       this.setCamera(ns, mx - g.wm.x * ns, my - g.wm.y * ns)
+      g.samples.push({ t: e.timeStamp, x: mx, y: my })
+      if (g.samples.length > 8) g.samples.shift()
     }
   }
 
@@ -723,11 +793,16 @@ export class View {
     const g = this.gesture
     if (!g) return
     if (this.touches.size > 0) {
+      // due dita che scorrevano: l'inerzia parte quando si alza il primo
+      if (!cancelled && g.mode === 'pinch' && !g.zooming) g.pendingFling = { v: this.flingVelocity(g, e.timeStamp), t: e.timeStamp }
       this.beginGesturePhase()
       return
     }
     this.gesture = null
-    if (cancelled) return
+    if (cancelled) {
+      this.revertGesture(g)
+      return
+    }
     const dur = e.timeStamp - g.t0
     if (!g.moved && dur < 320) {
       if (g.maxTouches === 2) this.handlers.twoFingerTap?.()
@@ -744,17 +819,20 @@ export class View {
       }
       return
     }
-    if (g.mode === 'pan' && g.samples.length >= 2) {
-      const last = g.samples[g.samples.length - 1]
-      let first = g.samples[0]
-      for (const s of g.samples) if (last.t - s.t < 90) { first = s; break }
-      const dt = last.t - first.t
-      if (dt > 0 && e.timeStamp - last.t < 60) {
-        let vx = (last.x - first.x) / dt
-        let vy = (last.y - first.y) / dt
-        if (Math.hypot(vx, vy) > 0.25) this.startFling(vx, vy)
-      }
-    }
+    let v = g.mode === 'pan' ? this.flingVelocity(g, e.timeStamp) : null
+    if (!v && g.pendingFling && e.timeStamp - g.pendingFling.t < 200) v = g.pendingFling.v
+    if (v) this.startFling(v.x, v.y)
+  }
+
+  flingVelocity(g, now) {
+    if (g.samples.length < 2) return null
+    const last = g.samples[g.samples.length - 1]
+    let first = g.samples[0]
+    for (const s of g.samples) if (last.t - s.t < 90) { first = s; break }
+    const dt = last.t - first.t
+    if (dt <= 0 || now - last.t > 60) return null
+    const x = (last.x - first.x) / dt, y = (last.y - first.y) / dt
+    return Math.hypot(x, y) > 0.25 ? { x, y } : null
   }
 
   startFling(vx, vy) {

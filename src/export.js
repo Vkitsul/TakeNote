@@ -105,6 +105,13 @@ export async function exportPdf(doc, onProgress) {
         for (let i = 0; i < L.length; i += 4) d += `M${L[i].toFixed(2)} ${L[i + 1].toFixed(2)}L${L[i + 2].toFixed(2)} ${L[i + 3].toFixed(2)}`
         page.drawSvgPath(d, { x: 0, y: 0, borderColor: rgb(r / 255, gg / 255, b / 255), borderWidth: 0.5, borderOpacity: g.alpha })
       }
+      for (const x of g.extra) {
+        if (!x.lines.length) continue
+        let d = ''
+        const L = x.lines
+        for (let i = 0; i < L.length; i += 4) d += `M${L[i].toFixed(2)} ${L[i + 1].toFixed(2)}L${L[i + 2].toFixed(2)} ${L[i + 3].toFixed(2)}`
+        page.drawSvgPath(d, { x: 0, y: 0, borderColor: rgb(r / 255, gg / 255, b / 255), borderWidth: x.lw, borderOpacity: x.alpha })
+      }
       if (g.dots.length) {
         let d = ''
         const D = g.dots

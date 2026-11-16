@@ -518,6 +518,15 @@ select.input {
   background-image: linear-gradient(#dce2ec 1px, transparent 1px), linear-gradient(90deg, #dce2ec 1px, transparent 1px);
   background-size: 6px 6px;
 }
+.pv-grid4 {
+  background-image: linear-gradient(#dce2ec 1px, transparent 1px), linear-gradient(90deg, #dce2ec 1px, transparent 1px);
+  background-size: 5px 5px;
+}
+.pv-mm {
+  background-image: linear-gradient(rgba(205, 110, 50, 0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(205, 110, 50, 0.55) 1px, transparent 1px),
+    linear-gradient(rgba(205, 110, 50, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(205, 110, 50, 0.2) 1px, transparent 1px);
+  background-size: 18px 18px, 18px 18px, 3px 3px, 3px 3px;
+}
 .pv-dotted {
   background-image: radial-gradient(#97a3b6 0.9px, transparent 1.2px);
   background-size: 6px 6px;

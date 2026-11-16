@@ -175,7 +175,7 @@ export class Library {
 
   // --- Quaderni ---
   newNotebookDialog() {
-    let tpl = 'lined'
+    let tpl = 'grid'
     let paper = '#ffffff'
     let size = 'a4p'
     let cover = COVERS[Math.floor(Math.random() * COVERS.length)]

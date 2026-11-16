@@ -1,6 +1,7 @@
 package com.takenote.notes;
 
 import android.content.pm.ActivityInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Display;
 import android.view.InputDevice;
@@ -25,6 +26,7 @@ public class MainActivity extends BridgeActivity {
     };
     private int penButtonState = 0;
     private InkOverlayView inkOverlay;
+    private InputRouter router;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -42,6 +44,9 @@ public class MainActivity extends BridgeActivity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setTextZoom(100);
+        // il motore del WebView non va mai rallentato dal sistema mentre l'app è in primo piano
+        if (Build.VERSION.SDK_INT >= 26) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+        if (Build.VERSION.SDK_INT >= 35) webView.setRequestedFrameRate(View.REQUESTED_FRAME_RATE_CATEGORY_HIGH);
         requestHighestRefreshRate();
         // livello del tratto in corso, sopra il WebView (vedi InkOverlayView)
         inkOverlay = new InkOverlayView(this, webView);
@@ -49,10 +54,15 @@ public class MainActivity extends BridgeActivity {
             inkOverlay,
             new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         );
+        router = new InputRouter(inkOverlay, ev -> MainActivity.super.dispatchTouchEvent(ev), getResources().getDisplayMetrics());
     }
 
     public InkOverlayView inkOverlay() {
         return inkOverlay;
+    }
+
+    public InputRouter inputRouter() {
+        return router;
     }
 
     // Ogni fotogramma in meno è ritardo in meno tra penna e inchiostro (Pad 7: fino a 144 Hz).
@@ -66,23 +76,22 @@ public class MainActivity extends BridgeActivity {
         }
         WindowManager.LayoutParams params = getWindow().getAttributes();
         params.preferredDisplayModeId = best.getModeId();
+        params.preferredRefreshRate = best.getRefreshRate();
         getWindow().setAttributes(params);
     }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         trackPenButtons(ev);
-        // campioni della penna consegnati appena arrivano, senza aspettare il fotogramma successivo
-        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN && ev.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS) {
-            getBridge().getWebView().requestUnbufferedDispatch(ev);
-        }
-        if (inkOverlay != null && inkOverlay.handle(ev)) return true;
+        // penna al livello del tratto, dita filtrate dal rifiuto del palmo (vedi InputRouter)
+        if (router != null) return router.dispatch(ev);
         return super.dispatchTouchEvent(ev);
     }
 
     @Override
     public boolean dispatchGenericMotionEvent(MotionEvent ev) {
         trackPenButtons(ev);
+        if (router != null) router.onHover(ev);
         return super.dispatchGenericMotionEvent(ev);
     }
 

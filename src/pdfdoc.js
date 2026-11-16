@@ -64,6 +64,12 @@ export function setPdfRenderPaused(v) {
   if (!v) for (const go of waiting.splice(0)) go()
 }
 
+// Mentre la pagina scorre i blocchi si distanziano: il PDF arriva lo stesso, ma senza scatti.
+let slow = false
+export function setPdfRenderSlow(v) {
+  slow = v
+}
+
 // --- Coda di rendering: priorità più bassa = più urgente ---
 const queue = []
 let running = 0
@@ -115,6 +121,7 @@ export function renderPdfRegion(ref, res, region, prio = 1) {
         })
         task.onContinue = (go) => {
           if (paused) waiting.push(go)
+          else if (slow) setTimeout(go, 24)
           else go()
         }
         await task.promise

@@ -6,7 +6,7 @@ import { uid, bbIntersects, distSqToSegment } from './util.js'
 import { getImage } from './images.js'
 import { isDark, displayColor, DARK_FILTER } from './theme.js'
 
-// line: true = polilinea a spessore costante (come Paint): nessuna pressione né smussatura
+// line: true = tratto a spessore costante (come Paint): nessuna pressione, curva che segue i campioni
 export const PEN_TYPES = {
   plain: { label: 'Tratto uniforme', line: true, alpha: 1 },
   fountain: { label: 'Stilografica', thinning: 0.6, smoothing: 0.55, streamline: 0.32, alpha: 1 },
@@ -63,23 +63,33 @@ export function strokeOutline(s, last = true) {
 
 const f2 = (v) => Math.round(v * 100) / 100
 
+// Curva che passa per i punti medi dei campioni, con i campioni come punti di controllo: toglie gli
+// spigoli senza introdurre ritardo. Stessa costruzione del livello nativo (InkOverlayView.java).
 export function polylinePath(pts) {
   const p = new Path2D()
-  if (pts.length < 3) return p
+  const n = pts.length
+  if (n < 3) return p
   p.moveTo(pts[0], pts[1])
   // un punto solo: segmento minuscolo, così il tappo tondo disegna il puntino
-  if (pts.length === 3) p.lineTo(pts[0] + 0.01, pts[1])
-  else for (let i = 3; i < pts.length; i += 3) p.lineTo(pts[i], pts[i + 1])
+  if (n === 3) {
+    p.lineTo(pts[0] + 0.01, pts[1])
+    return p
+  }
+  p.lineTo((pts[0] + pts[3]) / 2, (pts[1] + pts[4]) / 2)
+  for (let i = 3; i < n - 3; i += 3) p.quadraticCurveTo(pts[i], pts[i + 1], (pts[i] + pts[i + 3]) / 2, (pts[i + 1] + pts[i + 4]) / 2)
+  p.lineTo(pts[n - 3], pts[n - 2])
   return p
 }
 
-// Tracciato SVG della polilinea (per l'export PDF)
+// Stesso tracciato in formato SVG (per l'export PDF)
 export function polylineSvg(pts) {
-  if (pts.length < 3) return ''
+  const n = pts.length
+  if (n < 3) return ''
   let d = `M${f2(pts[0])} ${f2(pts[1])}`
-  if (pts.length === 3) d += `L${f2(pts[0] + 0.01)} ${f2(pts[1])}`
-  else for (let i = 3; i < pts.length; i += 3) d += `L${f2(pts[i])} ${f2(pts[i + 1])}`
-  return d
+  if (n === 3) return d + `L${f2(pts[0] + 0.01)} ${f2(pts[1])}`
+  d += `L${f2((pts[0] + pts[3]) / 2)} ${f2((pts[1] + pts[4]) / 2)}`
+  for (let i = 3; i < n - 3; i += 3) d += `Q${f2(pts[i])} ${f2(pts[i + 1])} ${f2((pts[i] + pts[i + 3]) / 2)} ${f2((pts[i + 1] + pts[i + 4]) / 2)}`
+  return d + `L${f2(pts[n - 3])} ${f2(pts[n - 2])}`
 }
 
 export function outlineToPath(o) {

@@ -7,6 +7,7 @@ import { Editor } from './editor/editor.js'
 import { toast } from './ui.js'
 import { initPenButtons } from './penbuttons.js'
 import { applyTheme } from './theme.js'
+import { applyPalm } from './palm.js'
 import { startAutoBackup, maybeAutoBackup } from './autobackup.js'
 
 const root = document.getElementById('app')
@@ -51,6 +52,7 @@ async function start() {
       if (!e.target.closest?.('input, textarea')) e.preventDefault()
     })
     await initPlatform()
+    applyPalm()
     startAutoBackup({ isEditing: () => !!document.querySelector('.editor') })
   } catch (e) {
     console.error(e)

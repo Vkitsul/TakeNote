@@ -37,7 +37,6 @@ export class PenTool {
     this.sp = this.line ? false : s.sp
     const x = w.x - e.x, y = w.y - e.y
     this.pts = [x, y, this.line ? 0.5 : s.p]
-    this.path = this.line ? polylinePath(this.pts) : null
     this.lastCx = s.cx
     this.lastCy = s.cy
     this.shape = null
@@ -61,7 +60,6 @@ export class PenTool {
     this.shape = r
     this.sp = false
     this.pts = shapeToPoints(r.poly, r.closed)
-    if (this.line) this.path = polylinePath(this.pts)
     navigator.vibrate?.(12)
     this.draw()
   }
@@ -77,7 +75,6 @@ export class PenTool {
           const w = v.toWorld(s.cx, s.cy)
           this.shape.poly[1] = [w.x - e.x, w.y - e.y]
           this.pts = shapeToPoints(this.shape.poly, false)
-          if (this.line) this.path = polylinePath(this.pts)
           changed = true
         }
         continue
@@ -96,7 +93,6 @@ export class PenTool {
       const w = v.toWorld(s.cx, s.cy)
       const x = w.x - e.x, y = w.y - e.y
       this.pts.push(x, y, this.line ? 0.5 : s.p)
-      if (this.line) this.path.lineTo(x, y)
       changed = true
       if (Math.hypot(s.cx - this.anchor.x, s.cy - this.anchor.y) > 5) {
         this.anchor = { x: s.cx, y: s.cy }
@@ -134,7 +130,7 @@ export class PenTool {
     ctx.rect(0, 0, this.entry.w, this.entry.h)
     ctx.clip()
     const stroke = { k: this.type, c: this.color, w: this.width, sp: this.sp, pts: this.drawPts || this.pts }
-    if (this.line) drawStroke(ctx, stroke, this.drawPts ? polylinePath(this.drawPts) : this.path)
+    if (this.line) drawStroke(ctx, stroke, polylinePath(stroke.pts))
     else drawStroke(ctx, stroke, outlineToPath(strokeOutline(stroke, false)))
     ctx.restore()
     ctx.globalAlpha = 1
@@ -188,7 +184,6 @@ export class PenTool {
     this.raf = 0
     this.entry = null
     this.drawPts = null
-    this.path = null
     this.ed.view.clearLive()
   }
 }

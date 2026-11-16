@@ -17,12 +17,13 @@ Questo funziona solo se l'APK è firmato con la stessa chiave → **non cancella
 
 **Libreria**
 - Cartelle (es. una per materia), quaderni con copertina in anteprima.
-- Nuovo quaderno: sfondo (bianco, righe, righe strette, quadretti, puntini), A4 verticale/orizzontale, colore carta.
+- Nuovo quaderno: sfondo (bianco, righe, righe strette, quadretti 5 mm, quadretti 4 mm, millimetrata, puntini), A4 verticale/orizzontale, colore carta.
 - Importa PDF → diventa un quaderno su cui scrivere.
 - Menu del quaderno: rinomina, sposta, colore copertina, esporta PDF, backup, elimina.
 
 **Editor**
-- **Tratto uniforme** (predefinito): spessore costante, nessuna pressione né smussatura, come scrivere col mouse in Paint.
+- **Tratto uniforme** (predefinito): spessore costante, nessuna pressione, come scrivere col mouse in Paint; la linea segue i campioni della penna con curve morbide, senza spigoli e senza ritardo.
+  La punta del tratto anticipa di qualche millisecondo il movimento della penna (*Previsione del tratto*, disattivabile).
   Il tratto in corso è disegnato da un livello nativo Android, molto più reattivo del WebView (si disattiva in *Impostazioni penna e tasti → Scrittura veloce*, in caso di problemi).
   Restano disponibili anche stilografica, sfera, pennello e matita, sensibili alla pressione ma senza scrittura veloce.
   Tocca di nuovo l'icona della penna attiva per cambiare tipo e spessore.
@@ -56,7 +57,11 @@ Questo funziona solo se l'APK è firmato con la stessa chiave → **non cancella
 **Gesti**
 - 1 dito: scorri · 2 dita: zoom · doppio tocco: adatta alla larghezza
 - Tocco con 2 dita: annulla · tocco con 3 dita: ripeti
-- Il palmo appoggiato mentre scrivi viene ignorato (tocchi larghi, o subito dopo/durante l'uso della penna).
+- **Rifiuto del palmo** (Impostazioni penna e tasti), filtrato a livello Android prima che il tocco arrivi all'app:
+  - *Forte* (predefinito): la mano è ignorata mentre la penna scrive o è sospesa sullo schermo, per 0,7 s dopo, e per 2,5 s entro 9 cm da dove hai scritto; anche i contatti larghi come un palmo. Un dito lontano dalla penna scorre subito.
+  - *Due dita*: in più un dito solo non scorre mai la pagina (scorri e ingrandisci con due dita).
+  - *Normale*: solo mentre la penna scrive e subito dopo.
+  - Se la mano ha fatto scorrere la pagina di poco prima che la penna toccasse, la pagina torna dov'era.
 - Impostazioni penna (menu ⋮): sensibilità pressione, disegno col dito, gesti, tasto penna.
 
 ## Backup (importante)

@@ -3,12 +3,12 @@
 // sollevata, restituisce i punti: il tratto entra nella pagina come tutti gli altri.
 // Quando il livello non può occuparsene (altri strumenti, forme, menu aperti, pagina in movimento)
 // la penna arriva al WebView come sempre.
-import { Capacitor, registerPlugin } from '@capacitor/core'
+import { Capacitor } from '@capacitor/core'
+import { InkOverlay } from '../palm.js'
 import { settings } from '../settings.js'
 import { PEN_TYPES } from '../ink.js'
 import { displayColor, isDark } from '../theme.js'
 
-const InkOverlay = registerPlugin('InkOverlay')
 const SETTLE_MS = 80
 
 export class NativeInk {
@@ -36,7 +36,7 @@ export class NativeInk {
     if (d.phase === 'down') {
       this.active = true
       ed.lastPen = performance.now()
-      ed.view.cancelTouches()
+      ed.view.cancelTouches(true)
       ed.selection.drop()
       ed.inkStarted()
       // un tasto premuto a metà tratto cambia strumento, ma il tratto resta di chi l'ha iniziato
@@ -104,6 +104,7 @@ export class NativeInk {
       alpha: isDark() && T.blend ? Math.min(1, T.alpha + 0.08) : T.alpha,
       width: cfg.width * v.s * v.dpr,
       dpr: v.dpr,
+      predict: settings.predict,
       pages,
       excl,
     }

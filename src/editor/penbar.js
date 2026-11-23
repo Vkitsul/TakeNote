@@ -1,6 +1,6 @@
-// Barra penne flottante (come in Notein): solo le penne preferite, trascinabile ovunque,
-// riducibile a icona ed espandibile. Le penne sono "slot": modificando colore/spessore
-// della penna attiva dalla barra in alto si aggiorna anche lo slot.
+// Floating pen bar (as in Notein): favorite pens only, can be dragged anywhere,
+// collapsed to an icon and expanded again. Pens are "slots": changing the color/width
+// of the active pen from the top bar updates the slot too.
 import { h, uid, clamp, hexToRgb } from '../util.js'
 import { icon } from '../icons.js'
 import { settings, saveSettings, pushRecentColor } from '../settings.js'
@@ -13,7 +13,7 @@ const DRAG_THRESHOLD = 6
 
 const toolOf = (p) => (p.type === 'highlighter' ? 'highlighter' : 'pen')
 
-// il colore si confonde con lo sfondo della barra (chiaro o scuro)?
+// does the color blend into the bar background (light or dark)?
 function lowContrast(hex) {
   const [r, g, b] = hexToRgb(hex)
   const l = 0.299 * r + 0.587 * g + 0.114 * b
@@ -42,7 +42,7 @@ export class PenBar {
     return this.presets.find((p) => p.id === settings.activePreset) || null
   }
 
-  // --- Disegno ---
+  // --- Rendering ---
   render() {
     const cfg = this.cfg
     this.el.className = 'penbar' + (cfg.collapsed ? ' collapsed' : '') + (cfg.vertical ? ' vertical' : '')
@@ -52,24 +52,24 @@ export class PenBar {
     const usingPreset = act && toolOf(act) === this.ed.tool && !this.ed.holdTool
     if (cfg.collapsed) {
       const p = act || { type: settings.pen.type, color: settings.pen.color, width: settings.pen.width }
-      const fab = h('button', { class: 'pb-fab', title: 'Espandi la barra penne' }, this.penIcon(p, 26))
+      const fab = h('button', { class: 'pb-fab', title: 'Expand the pen bar' }, this.penIcon(p, 26))
       this.dragOn(fab, () => this.setCollapsed(false))
       this.el.append(fab)
     } else {
-      const handle = h('div', { class: 'pb-handle', title: 'Trascina per spostare' }, h('span'), h('span'), h('span'), h('span'), h('span'), h('span'))
+      const handle = h('div', { class: 'pb-handle', title: 'Drag to move' }, h('span'), h('span'), h('span'), h('span'), h('span'), h('span'))
       this.dragOn(handle, null)
       const slots = h('div', { class: 'pb-slots' })
       for (const p of this.presets) {
-        const b = h('button', { class: 'pb-slot' + (usingPreset && p.id === act.id ? ' active' : ''), title: PEN_TYPES[p.type]?.label || 'Penna' }, this.penIcon(p, 24))
+        const b = h('button', { class: 'pb-slot' + (usingPreset && p.id === act.id ? ' active' : ''), title: PEN_TYPES[p.type]?.label || 'Pen' }, this.penIcon(p, 24))
         b.addEventListener('click', () => {
           if (usingPreset && p.id === act.id) this.editPreset(p, b)
           else this.select(p)
         })
         slots.append(b)
       }
-      const add = h('button', { class: 'pb-btn', title: 'Aggiungi penna', onclick: () => this.addPreset() }, icon('plus', 20))
-      const more = h('button', { class: 'pb-btn', title: 'Opzioni barra', onclick: (e) => this.barMenu(e.currentTarget) }, icon('more', 18))
-      const collapse = h('button', { class: 'pb-btn', title: 'Riduci a icona', onclick: () => this.setCollapsed(true) }, icon('collapse', 18))
+      const add = h('button', { class: 'pb-btn', title: 'Add pen', onclick: () => this.addPreset() }, icon('plus', 20))
+      const more = h('button', { class: 'pb-btn', title: 'Bar options', onclick: (e) => this.barMenu(e.currentTarget) }, icon('more', 18))
+      const collapse = h('button', { class: 'pb-btn', title: 'Collapse to icon', onclick: () => this.setCollapsed(true) }, icon('collapse', 18))
       this.el.append(handle, slots, add, more, collapse)
     }
     requestAnimationFrame(() => this.place())
@@ -84,7 +84,7 @@ export class PenBar {
     return wrap
   }
 
-  // Posizione: x/y sono il centro della barra in frazioni dell'area dell'editor
+  // Position: x/y are the bar's center as fractions of the editor area
   place() {
     const area = this.ed.main.getBoundingClientRect()
     const w = this.el.offsetWidth, hh = this.el.offsetHeight
@@ -97,7 +97,7 @@ export class PenBar {
     this.ed.nativeInk?.sync()
   }
 
-  // Trascinamento (maniglia o icona ridotta). onTap: azione per un tocco senza spostamento.
+  // Dragging (handle or collapsed icon). onTap: action for a tap without movement.
   dragOn(el, onTap) {
     el.addEventListener('pointerdown', (e) => {
       if (e.button > 0) return
@@ -107,7 +107,7 @@ export class PenBar {
       try {
         el.setPointerCapture(e.pointerId)
       } catch {
-        /* ignora */
+        /* ignore */
       }
       const area = this.ed.main.getBoundingClientRect()
       const r = this.el.getBoundingClientRect()
@@ -140,7 +140,7 @@ export class PenBar {
     })
   }
 
-  // --- Penne ---
+  // --- Pens ---
   applyPreset(p) {
     if (toolOf(p) === 'highlighter') {
       settings.highlighter.color = p.color
@@ -156,11 +156,11 @@ export class PenBar {
     settings.activePreset = p.id
     this.applyPreset(p)
     saveSettings()
-    this.ed.setTool(toolOf(p)) // aggiorna la barra in alto, che a sua volta chiama sync()
+    this.ed.setTool(toolOf(p)) // updates the top bar, which in turn calls sync()
     this.render()
   }
 
-  // Chiamata dalla barra in alto dopo ogni modifica: tiene allineato lo slot attivo.
+  // Called by the top bar after every change: keeps the active slot in step.
   sync() {
     const tool = this.ed.tool
     const act = this.active()
@@ -186,7 +186,7 @@ export class PenBar {
     if (!list.length) return
     const act = this.active()
     let i = act ? list.indexOf(act) : -1
-    // se si stava usando un altro strumento, il primo tocco torna alla penna attiva
+    // if another tool was in use, the first tap goes back to the active pen
     if (act && toolOf(act) !== this.ed.tool) i -= dir
     i = (i + dir + list.length) % list.length
     this.select(list[i])
@@ -249,7 +249,7 @@ export class PenBar {
       },
       { recent: settings.recentColors }
     )
-    const del = h('button', { class: 'btn danger block', disabled: this.presets.length <= 1 }, icon('trash', 18), 'Rimuovi dalla barra')
+    const del = h('button', { class: 'btn danger block', disabled: this.presets.length <= 1 }, icon('trash', 18), 'Remove from bar')
     del.addEventListener('click', () => {
       closePopover()
       this.removePreset(p)
@@ -257,11 +257,11 @@ export class PenBar {
     const body = h(
       'div',
       { class: 'pop-section preset-editor' },
-      h('div', { class: 'pop-title' }, 'Tipo'),
+      h('div', { class: 'pop-title' }, 'Type'),
       types,
-      h('div', { class: 'pop-title' }, 'Spessore'),
+      h('div', { class: 'pop-title' }, 'Width'),
       widthRow,
-      h('div', { class: 'pop-title' }, 'Colore'),
+      h('div', { class: 'pop-title' }, 'Color'),
       picker,
       del
     )
@@ -285,7 +285,7 @@ export class PenBar {
   barMenu(anchor) {
     menu(anchor, [
       {
-        label: this.cfg.vertical ? 'Barra orizzontale' : 'Barra verticale',
+        label: this.cfg.vertical ? 'Horizontal bar' : 'Vertical bar',
         icon: 'move',
         onClick: () => {
           this.cfg.vertical = !this.cfg.vertical
@@ -294,20 +294,20 @@ export class PenBar {
         },
       },
       {
-        label: 'Sposta la penna attiva prima',
+        label: 'Move the active pen earlier',
         icon: 'back',
         disabled: !this.active() || this.presets.indexOf(this.active()) <= 0,
         onClick: () => this.moveActive(-1),
       },
       {
-        label: 'Sposta la penna attiva dopo',
+        label: 'Move the active pen later',
         icon: 'forward',
         disabled: !this.active() || this.presets.indexOf(this.active()) >= this.presets.length - 1,
         onClick: () => this.moveActive(1),
       },
-      { label: 'Ripristina penne predefinite', icon: 'undo', onClick: () => this.resetPresetsPrompt() },
+      { label: 'Restore default pens', icon: 'undo', onClick: () => this.resetPresetsPrompt() },
       '-',
-      { label: 'Nascondi barra penne', icon: 'close', onClick: () => this.setShown(false) },
+      { label: 'Hide pen bar', icon: 'close', onClick: () => this.setShown(false) },
     ])
   }
 
@@ -340,7 +340,7 @@ export class PenBar {
   }
 
   async resetPresetsPrompt() {
-    if (await confirmDialog('Ripristinare le penne predefinite della barra?')) {
+    if (await confirmDialog('Restore the default pens in the bar?')) {
       settings.penPresets = [
         { id: uid(), type: 'plain', color: '#1f2a44', width: 1.6 },
         { id: uid(), type: 'plain', color: '#e03131', width: 1.6 },

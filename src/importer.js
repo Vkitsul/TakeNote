@@ -1,4 +1,4 @@
-// Importazione PDF: salva il file e crea una pagina per ogni pagina del PDF.
+// PDF import: stores the file and creates one page per PDF page.
 import * as db from './db.js'
 import { uid } from './util.js'
 import { newPage } from './doc.js'

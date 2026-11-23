@@ -15,17 +15,17 @@ import androidx.input.motionprediction.MotionEventPredictor;
 import java.util.ArrayList;
 
 /**
- * Tratto in corso disegnato da una vista Android sopra il WebView: il disegno non passa dal motore
- * del browser, che impiegherebbe diversi fotogrammi a mostrarlo. A penna sollevata i punti vanno
- * all'app web, che aggiunge il tratto alla pagina; questa vista lo cancella quando quello della
- * pagina è pronto a comparire, così non ci sono sfarfallii.
+ * Live stroke drawn by an Android view on top of the WebView: drawing skips the browser engine,
+ * which would take several frames to show it. When the pen lifts, the points go to the
+ * web app, which adds the stroke to the page; this view clears it once the page's copy is
+ * ready to appear, so nothing flickers.
  *
- * Riceve da InputRouter solo eventi della penna. Interviene se l'app l'ha abilitata e il tocco cade
- * su una pagina fuori dalle zone riservate all'interfaccia; altrimenti l'evento va al WebView.
+ * Receives only pen events from InputRouter. It acts if the app enabled it and the touch lands
+ * on a page outside the areas reserved for the UI; otherwise the event goes to the WebView.
  *
- * Il tratto è una curva che passa per i punti medi dei campioni (stessa costruzione di
- * polylinePath in ink.js, così prima e dopo il rilascio coincidono). La punta può essere allungata
- * di qualche millisecondo con la previsione del movimento: è solo disegnata, mai salvata.
+ * The stroke is a curve through the midpoints of the samples (same construction as
+ * polylinePath in ink.js, so it looks the same before and after release). The tip can be extended
+ * by a few milliseconds with motion prediction: it is only drawn, never saved.
  */
 public class InkOverlayView extends View {
 
@@ -38,7 +38,7 @@ public class InkOverlayView extends View {
         final Paint paint;
         final int alpha;
         final RectF clip;
-        // pezzi già chiusi del tratto: non cambiano più, così ogni fotogramma ricalcola solo la coda
+        // finished chunks of the stroke: they never change, so each frame rebuilds only the tail
         final ArrayList<Path> frozen = new ArrayList<>();
         Path tail = new Path();
         int tailPoints;
@@ -71,7 +71,7 @@ public class InkOverlayView extends View {
     private int nextId = 1;
     private float[] points = new float[2048];
     private int count = 0;
-    // ultimo campione e ultimo punto medio, in coordinate di questa vista
+    // last sample and last midpoint, in this view's coordinates
     private float lastX;
     private float lastY;
     private float midX;
@@ -95,7 +95,7 @@ public class InkOverlayView extends View {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        // campioni consegnati appena arrivano, senza aspettare il fotogramma successivo
+        // samples delivered as soon as they arrive, without waiting for the next frame
         if (Build.VERSION.SDK_INT >= 30) requestUnbufferedDispatch(InputDevice.SOURCE_CLASS_POINTER);
     }
 
@@ -109,7 +109,7 @@ public class InkOverlayView extends View {
         this.predict = predict;
     }
 
-    /** @return true se il tratto della penna è gestito qui e non deve arrivare al WebView */
+    /** @return true if the pen stroke is handled here and must not reach the WebView */
     public boolean handle(MotionEvent ev) {
         int action = ev.getActionMasked();
         if (active != null) {
@@ -144,7 +144,7 @@ public class InkOverlayView extends View {
             pages[page + 2] * dpr + ox,
             pages[page + 3] * dpr + oy
         );
-        // il colore è sempre pieno: la trasparenza (evidenziatore) si applica all'intero tratto in onDraw
+        // the color is always opaque: transparency (highlighter) is applied to the whole stroke in onDraw
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeCap(Paint.Cap.ROUND);
@@ -213,7 +213,7 @@ public class InkOverlayView extends View {
         points[count++] = (y - webLoc[1]) / dpr;
     }
 
-    // Punti previsti oltre la punta: accorciano il ritardo percepito. Scartati se troppo lontani.
+    // Predicted points past the tip: they shorten the perceived lag. Dropped if too far away.
     private void updatePrediction() {
         predictedCount = 0;
         if (!predict) return;
@@ -236,7 +236,7 @@ public class InkOverlayView extends View {
 
     private void finishStroke() {
         final Stroke done = active;
-        // chiude la curva sull'ultimo campione reale
+        // ends the curve on the last real sample
         done.tail.lineTo(lastX + (samples == 1 ? 0.01f : 0f), lastY);
         active = null;
         predictedCount = 0;
@@ -249,7 +249,7 @@ public class InkOverlayView extends View {
         json.append("]}");
         emit(json.toString());
         invalidate();
-        // rete di sicurezza: un tratto non deve mai restare sopra la pagina
+        // safety net: a stroke must never stay on top of the page
         postDelayed(() -> remove(done.id), CLEAR_FALLBACK_MS);
     }
 
@@ -257,7 +257,7 @@ public class InkOverlayView extends View {
         webView.evaluateJavascript("window.dispatchEvent(new CustomEvent('nativeink',{detail:" + detail + "}))", null);
     }
 
-    /** L'app ha aggiunto il tratto alla pagina: lo si cancella qui quando quello è pronto a comparire. */
+    /** The app added the stroke to the page: clear it here once that copy is ready to appear. */
     public void committed(final int id) {
         webView.postVisualStateCallback(
             id,
@@ -289,7 +289,7 @@ public class InkOverlayView extends View {
             for (int k = 0; k < s.frozen.size(); k++) canvas.drawPath(s.frozen.get(k), s.paint);
             canvas.drawPath(s.tail, s.paint);
             if (s == active) {
-                // dal punto medio all'ultimo campione, più la punta prevista
+                // from the midpoint to the last sample, plus the predicted tip
                 tip.rewind();
                 tip.moveTo(midX, midY);
                 tip.lineTo(lastX + (samples == 1 ? 0.01f : 0f), lastY);

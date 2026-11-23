@@ -1,4 +1,4 @@
-// Icone SVG inline (24x24, tratto currentColor).
+// Inline SVG icons (24x24, currentColor stroke).
 
 const P = {
   back: '<path d="M15 18l-6-6 6-6"/>',
@@ -41,7 +41,7 @@ const P = {
   backup: '<path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z"/><path d="M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
   shapes: '<circle cx="8" cy="8" r="4.5"/><rect x="11" y="11" width="9" height="9" rx="1.2"/>',
   plain: '<path d="M4 20l4.5-1 10-10a2.1 2.1 0 00-3-3l-10 10z"/><path d="M14 7l3 3"/>',
-  // Penne (disegnate verticali e ruotate)
+  // Pens (drawn vertical, then rotated)
   fountain: '<g transform="rotate(40 12 12)"><path d="M10 2h4v8.5l2 3.5-4 8-4-8 2-3.5z"/><path d="M12 15.5v3.5"/></g>',
   ballpoint: '<g transform="rotate(40 12 12)"><path d="M10 2h4v13l-2 5.5-2-5.5z"/><path d="M10 14.5h4"/></g>',
   brush: '<g transform="rotate(40 12 12)"><path d="M10.5 2h3v9.5h-3z"/><path d="M9.8 11.5h4.4c0 4.2-1 7.3-2.2 10.5-1.2-3.2-2.2-6.3-2.2-10.5z"/></g>',

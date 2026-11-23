@@ -1,4 +1,4 @@
-// Miniature delle pagine (pannello pagine e copertine della libreria).
+// Page thumbnails (pages panel and library covers).
 import { drawItems } from './ink.js'
 import { drawTemplate } from './templates.js'
 import { renderPdfRegion, isCancel } from './pdfdoc.js'

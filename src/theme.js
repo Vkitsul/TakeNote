@@ -1,7 +1,7 @@
-// Modalità scura: cambia solo la visualizzazione, mai i dati salvati.
-// - pagine, carta e PDF vengono invertiti (come il filtro CSS DARK_FILTER)
-// - l'inchiostro "nero" (colori scuri e poco saturi) diventa chiaro, gli altri colori restano uguali
-// Togliendo la modalità scura tutto torna com'era; l'export PDF usa sempre i colori originali.
+// Dark mode: changes only what is shown, never the saved data.
+// - pages, paper and PDFs are inverted (like the DARK_FILTER CSS filter)
+// - "black" ink (dark, low-saturation colors) turns light; other colors stay the same
+// Turning dark mode off restores everything; PDF export always uses the original colors.
 import { Capacitor } from '@capacitor/core'
 import { settings, saveSettings } from './settings.js'
 import { hexToRgb, rgbToHex } from './util.js'
@@ -39,7 +39,7 @@ export function applyTheme() {
   }
 }
 
-// Colore con cui disegnare un tratto sullo schermo.
+// Color used to draw a stroke on screen.
 export function displayColor(hex) {
   if (!isDark()) return hex
   let c = inkCache.get(hex)
@@ -48,7 +48,7 @@ export function displayColor(hex) {
   const max = Math.max(r, g, b)
   const min = Math.min(r, g, b)
   if (max < 0.45 && max - min < 0.2) {
-    // "nero": inverte la luminosità mantenendo la tinta, poi lo avvicina al bianco
+    // "black": inverts the lightness keeping the hue, then moves it toward white
     const k = 1 - max - min
     const mix = (v) => ((v + k) * 0.6 + 0.4) * 255
     c = rgbToHex(mix(r), mix(g), mix(b))
@@ -57,7 +57,7 @@ export function displayColor(hex) {
   return c
 }
 
-// Stesso risultato di DARK_FILTER applicato a un colore pieno (per lo sfondo della carta).
+// Same result as DARK_FILTER applied to a solid color (for the paper background).
 export function displayPaper(hex) {
   if (!isDark()) return hex
   let c = paperCache.get(hex)

@@ -1,4 +1,4 @@
-// Copia cmaps e font standard di pdf.js in public/ così funzionano offline.
+// Copies the pdf.js cmaps and standard fonts into public/ so they work offline.
 import { cpSync, existsSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,4 +11,4 @@ mkdirSync(dst, { recursive: true })
 for (const dir of ['cmaps', 'standard_fonts']) {
   cpSync(join(src, dir), join(dst, dir), { recursive: true })
 }
-console.log('pdf.js assets copiati in public/pdfjs')
+console.log('pdf.js assets copied to public/pdfjs')

@@ -33,7 +33,7 @@ async function openNotebook(id) {
     })
   } catch (e) {
     console.error(e)
-    toast('Impossibile aprire il quaderno')
+    toast('Cannot open the notebook')
     showLibrary()
   } finally {
     opening = false
@@ -47,7 +47,7 @@ async function start() {
     applyTheme()
     navigator.storage?.persist?.().catch(() => {})
     initPenButtons()
-    // il tasto della penna può generare un "clic destro": nessun menu contestuale nell'app
+    // the pen button can produce a "right click": no context menu in the app
     document.addEventListener('contextmenu', (e) => {
       if (!e.target.closest?.('input, textarea')) e.preventDefault()
     })

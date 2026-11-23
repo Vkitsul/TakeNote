@@ -1,4 +1,4 @@
-// Editor di un quaderno: unisce vista, strumenti, selezione, cronologia, pannelli e input penna/dita.
+// Notebook editor: ties together view, tools, selection, history, panels and pen/finger input.
 import { h, clamp, uid } from '../util.js'
 import { settings, saveSettings } from '../settings.js'
 import { NotebookDoc, newPage } from '../doc.js'
@@ -28,7 +28,7 @@ import { onTheme, isDark, setDark } from '../theme.js'
 import { applyPalm, PALM_MODES } from '../palm.js'
 import { segmented } from '../ui.js'
 
-let clipboard = null // condiviso tra quaderni
+let clipboard = null // shared across notebooks
 
 export class Editor {
   static async open(root, notebookId, onClose) {
@@ -41,7 +41,7 @@ export class Editor {
     this.onCloseCb = onClose
     this.tool = ['pen', 'highlighter', 'eraser', 'lasso', 'snip'].includes(settings.tool) ? settings.tool : 'pen'
     this.toolPtr = null
-    this.holdTool = null // strumento temporaneo mentre si tiene premuto un tasto della penna
+    this.holdTool = null // temporary tool while a pen button is held
     this.prevTool = 'pen'
     this.lastPen = -1e9
     this.mousePan = null
@@ -80,7 +80,7 @@ export class Editor {
       this.toolbar.refresh()
       this.nativeInk.sync()
     })
-    // inizializza subito la camera, senza aspettare il primo callback del ResizeObserver
+    // set up the camera right away, without waiting for the first ResizeObserver callback
     this.view.onResize()
 
     this.view.handlers = {
@@ -119,7 +119,7 @@ export class Editor {
     if (import.meta.env.DEV) window.__ed = this
   }
 
-  // Si sta scrivendo (o si è appena staccata la penna): i lavori pesanti aspettano.
+  // The user is writing (or just lifted the pen): heavy work waits.
   writing() {
     return !!this.toolPtr || this.nativeInk.active || performance.now() - this.lastInk < 350
   }
@@ -175,7 +175,7 @@ export class Editor {
       const fingerTool = settings.fingerDraw && !this.toolPtr && this.view.touches.size === 0
       if (fingerTool) return this.startTool(e)
       if (this.toolPtr?.type === 'touch') {
-        // un secondo dito: annulla il tratto col dito e passa al gesto
+        // a second finger: cancel the finger stroke and switch to the gesture
         const tp = this.toolPtr
         this.toolPtr = null
         tp.tool.discard ? tp.tool.discard() : tp.tool.cancel()
@@ -194,7 +194,7 @@ export class Editor {
     if (this.toolPtr) return
     if (e.pointerType === 'pen') {
       this.lastPen = performance.now()
-      // tasto premuto con la penna sospesa: non è un tocco sullo schermo
+      // button pressed with the pen hovering: not a touch on the screen
       if (!(e.pressure > 0) && !(e.buttons & 33)) return
       this.view.cancelTouches(true)
     }
@@ -203,15 +203,15 @@ export class Editor {
 
   startTool(e) {
     let tool = this.tools[this.holdTool || this.tool]
-    if (e.pointerType === 'pen' && e.buttons & 32) tool = this.tools.eraser // gommino in cima alla penna
+    if (e.pointerType === 'pen' && e.buttons & 32) tool = this.tools.eraser // eraser at the top of the pen
     if (tool !== this.tools.lasso && tool !== this.tools.snip) this.selection.drop()
     try {
       this.view.el.setPointerCapture(e.pointerId)
     } catch {
-      /* ignora */
+      /* ignore */
     }
     this.toolPtr = { id: e.pointerId, tool, type: e.pointerType, raw: false, lastX: e.clientX, lastY: e.clientY }
-    // gli eventi "grezzi" servono solo a tratto iniziato: con la penna sospesa non svegliano l'app
+    // "raw" events matter only once a stroke has started: a hovering pen does not wake the app
     if ('onpointerrawupdate' in window) this.view.el.addEventListener('pointerrawupdate', this.onRawBound)
     this.inkStarted()
     tool.down(this.sample(e))
@@ -291,9 +291,9 @@ export class Editor {
     }
   }
 
-  // --- Tasti della penna ---
+  // --- Pen buttons ---
   onPenButton({ binding, down }) {
-    // con un dialogo aperto (es. prova dei tasti) la pressione non deve agire sul quaderno
+    // with a dialog open (e.g. the button test) a press must not act on the notebook
     if (down && document.querySelector('.dialog-backdrop')) return
     const a = actionInfo(binding.action)
     if (a.hold) {
@@ -333,7 +333,7 @@ export class Editor {
     }
   }
 
-  // --- Strumenti ---
+  // --- Tools ---
   setTool(id) {
     if (id !== 'lasso') this.selection.drop()
     this.tools[this.tool].leave?.()
@@ -350,7 +350,7 @@ export class Editor {
 
   setClipboard(items) {
     clipboard = items
-    toast('Copiato')
+    toast('Copied')
     this.toolbar.refreshContext()
   }
 
@@ -376,22 +376,22 @@ export class Editor {
     if (this.selection.active) {
       this.selection.drop()
     }
-    if (this.history.undo()) toast('Annullato', 900)
+    if (this.history.undo()) toast('Undone', 900)
     this.toolbar.refreshHistory()
   }
 
   redo() {
     this.selection.drop()
-    if (this.history.redo()) toast('Ripetuto', 900)
+    if (this.history.redo()) toast('Redone', 900)
     this.toolbar.refreshHistory()
   }
 
-  // --- Pagine ---
+  // --- Pages ---
   currentIndex() {
     return this.view.currentIndex()
   }
 
-  // Chiamata a ogni movimento della pagina: tocca il DOM solo quando il numero cambia.
+  // Called on every page movement: touches the DOM only when the number changes.
   updateIndicator() {
     const n = this.doc.pages.length
     const i = this.currentIndex()
@@ -403,7 +403,7 @@ export class Editor {
   }
 
   async goToPagePrompt() {
-    const v = await promptDialog('Vai alla pagina', String(this.currentIndex() + 1), { okLabel: 'Vai' })
+    const v = await promptDialog('Go to page', String(this.currentIndex() + 1), { okLabel: 'Go' })
     const n = parseInt(v, 10)
     if (n >= 1) this.view.scrollToPage(n - 1)
   }
@@ -441,13 +441,13 @@ export class Editor {
     this.selection.drop()
     const pages = this.doc.pages
     if (pages.length <= 1) {
-      toast('Un quaderno deve avere almeno una pagina')
+      toast('A notebook needs at least one page')
       return
     }
     const after = pages.slice()
     after.splice(index, 1)
     this.history.commitPages(pages.slice(), after)
-    toast('Pagina eliminata — tocca Annulla per recuperarla')
+    toast('Page deleted — tap Undo to bring it back')
   }
 
   movePage(from, to) {
@@ -485,20 +485,20 @@ export class Editor {
   async insertPdf(index) {
     const file = await pickFile('application/pdf')
     if (!file) return
-    const prog = progressDialog('Importazione PDF')
+    const prog = progressDialog('Importing PDF')
     try {
-      const newPages = await importPdfPages(file, this.doc.nb.id, (f) => prog.set(f, 'Lettura pagine…'))
+      const newPages = await importPdfPages(file, this.doc.nb.id, (f) => prog.set(f, 'Reading pages…'))
       const pages = this.doc.pages
       const after = pages.slice()
       after.splice(index + 1, 0, ...newPages)
       this.history.commitPages(pages.slice(), after)
       prog.close()
-      toast(`${newPages.length} pagine inserite`)
+      toast(`${newPages.length} pages inserted`)
       requestAnimationFrame(() => this.view.scrollToPage(index + 1))
     } catch (e) {
       prog.close()
       console.error(e)
-      toast('PDF non valido o protetto')
+      toast('Invalid or protected PDF')
     }
   }
 
@@ -528,15 +528,15 @@ export class Editor {
       paperRow.append(b)
     }
     openDialog({
-      title: 'Sfondo pagina',
+      title: 'Page background',
       body: h(
         'div',
         null,
         tplGrid,
-        page.pdf ? h('p', { class: 'muted' }, 'Le pagine PDF mantengono il loro sfondo; le righe verranno sovrapposte.') : h('div', null, h('div', { class: 'pop-title' }, 'Colore carta'), paperRow),
-        toggle('Applica a tutte le pagine (non PDF)', false, (v) => { all = v })
+        page.pdf ? h('p', { class: 'muted' }, 'PDF pages keep their own background; the lines are drawn on top.') : h('div', null, h('div', { class: 'pop-title' }, 'Paper color'), paperRow),
+        toggle('Apply to all pages (not PDF)', false, (v) => { all = v })
       ),
-      actions: [{ label: 'Annulla' }, { label: 'Applica', primary: true, onClick: () => this.setPageBackground(index, { tpl, paper }, all) }],
+      actions: [{ label: 'Cancel' }, { label: 'Apply', primary: true, onClick: () => this.setPageBackground(index, { tpl, paper }, all) }],
     })
   }
 
@@ -601,10 +601,10 @@ export class Editor {
       const off = 14 / this.view.s
       const img = { id: uid(), t: 'i', f: snip.fileId, x: rect.x + off, y: rect.y + off, w: rect.w, h: rect.h }
       this.selection.liftNew([img], { discardIfUntouched: true })
-      toast('Snip salvato: trascinalo dove vuoi')
+      toast('Snip saved: drag it anywhere')
     } catch (e) {
       console.error(e)
-      toast('Snip non riuscito')
+      toast('Snip failed')
     }
   }
 
@@ -623,7 +623,7 @@ export class Editor {
     ctx.setTransform(res, 0, 0, res, -bb[0] * res, -bb[1] * res)
     drawItems(ctx, items, null, true)
     await this.addSnipToTray(canvas, w, hh)
-    toast('Salvato negli snip')
+    toast('Saved to snips')
   }
 
   insertSnip(snip, clientX, clientY) {
@@ -647,50 +647,50 @@ export class Editor {
     this.selection.liftNew([img])
   }
 
-  // --- Menu e impostazioni ---
+  // --- Menu and settings ---
   openMenu(anchor) {
     const idx = this.currentIndex()
     menu(anchor, [
-      { label: 'Esporta / condividi PDF', icon: 'share', onClick: () => this.exportPdf(false) },
-      { label: 'Salva PDF in Documenti', icon: 'download', onClick: () => this.exportPdf(true) },
+      { label: 'Export / share PDF', icon: 'share', onClick: () => this.exportPdf(false) },
+      { label: 'Save PDF to Documents', icon: 'download', onClick: () => this.exportPdf(true) },
       '-',
-      { label: 'Sfondo pagina…', icon: 'pages', onClick: () => this.openBackgroundDialog(idx) },
-      { label: 'Aggiungi pagina dopo questa', icon: 'plus', onClick: () => this.addPageAfter(idx) },
-      { label: 'Inserisci PDF dopo questa pagina', icon: 'file', onClick: () => this.insertPdf(idx) },
-      { label: 'Vai alla pagina…', icon: 'book', onClick: () => this.goToPagePrompt() },
-      { label: 'Adatta alla larghezza', icon: 'fit', onClick: () => this.view.fitWidth() },
+      { label: 'Page background…', icon: 'pages', onClick: () => this.openBackgroundDialog(idx) },
+      { label: 'Add page after this one', icon: 'plus', onClick: () => this.addPageAfter(idx) },
+      { label: 'Insert PDF after this page', icon: 'file', onClick: () => this.insertPdf(idx) },
+      { label: 'Go to page…', icon: 'book', onClick: () => this.goToPagePrompt() },
+      { label: 'Fit to width', icon: 'fit', onClick: () => this.view.fitWidth() },
       '-',
-      { label: isDark() ? 'Modalità chiara' : 'Modalità scura', icon: isDark() ? 'sun' : 'moon', onClick: () => setDark(!isDark()) },
+      { label: isDark() ? 'Light mode' : 'Dark mode', icon: isDark() ? 'sun' : 'moon', onClick: () => setDark(!isDark()) },
       {
-        label: settings.penBar.show ? 'Nascondi barra penne' : 'Mostra barra penne',
+        label: settings.penBar.show ? 'Hide pen bar' : 'Show pen bar',
         icon: 'pen',
         onClick: () => this.penBar.setShown(!settings.penBar.show),
       },
-      { label: 'Impostazioni penna e tasti', icon: 'settings', onClick: () => openSettingsDialog() },
+      { label: 'Pen and touch settings', icon: 'settings', onClick: () => openSettingsDialog() },
     ])
   }
 
   async exportPdf(toDocuments) {
     this.selection.drop()
     await this.doc.flush()
-    const prog = progressDialog('Esportazione PDF')
+    const prog = progressDialog('Exporting PDF')
     try {
-      const blob = await exportPdf(this.doc, (f) => prog.set(f, `Pagina ${Math.round(f * this.doc.pages.length)} di ${this.doc.pages.length}`))
+      const blob = await exportPdf(this.doc, (f) => prog.set(f, `Page ${Math.round(f * this.doc.pages.length)} of ${this.doc.pages.length}`))
       prog.close()
       const name = safeFileName(this.doc.nb.title) + '.pdf'
       if (toDocuments) {
         const where = await saveFile(blob, name)
-        toast('Salvato: ' + where, 3500)
+        toast('Saved: ' + where, 3500)
       } else await shareFile(blob, name, this.doc.nb.title)
     } catch (e) {
       prog.close()
       console.error(e)
-      toast('Esportazione non riuscita')
+      toast('Export failed')
     }
   }
 
   async rename() {
-    const t = await promptDialog('Nome del quaderno', this.doc.nb.title, { okLabel: 'Rinomina' })
+    const t = await promptDialog('Notebook name', this.doc.nb.title, { okLabel: 'Rename' })
     if (!t) return
     this.doc.nb.title = t
     this.doc.touch()
@@ -703,7 +703,7 @@ export class Editor {
     try {
       await this.doc.flush()
     } catch {
-      toast('Errore di salvataggio!')
+      toast('Save error!')
     }
   }
 
@@ -750,34 +750,34 @@ export class Editor {
 
 export function openSettingsDialog() {
   openDialog({
-    title: 'Impostazioni penna e tocco',
+    title: 'Pen and touch settings',
     body: h(
       'div',
       { class: 'settings-list' },
-      h('div', { class: 'pop-title' }, 'Sensibilità alla pressione (solo stilografica, sfera, pennello, matita)'),
+      h('div', { class: 'pop-title' }, 'Pressure sensitivity (fountain pen, ballpoint, brush and pencil only)'),
       slider({
         min: 0.4,
         max: 2,
         step: 0.05,
         value: settings.pressure,
-        format: (v) => (v < 0.85 ? 'Alta' : v > 1.2 ? 'Bassa' : 'Normale'),
+        format: (v) => (v < 0.85 ? 'High' : v > 1.2 ? 'Low' : 'Normal'),
         onInput: (v) => { settings.pressure = v; saveSettings() },
       }),
-      isNative ? toggle('Scrittura veloce (livello nativo Android)', settings.nativeInk, (v) => { settings.nativeInk = v; saveSettings() }) : null,
-      isNative ? toggle('Previsione del tratto (punta più reattiva)', settings.predict, (v) => { settings.predict = v; saveSettings() }) : null,
-      h('div', { class: 'pop-title' }, 'Rifiuto del palmo'),
+      isNative ? toggle('Fast writing (native Android layer)', settings.nativeInk, (v) => { settings.nativeInk = v; saveSettings() }) : null,
+      isNative ? toggle('Stroke prediction (more responsive tip)', settings.predict, (v) => { settings.predict = v; saveSettings() }) : null,
+      h('div', { class: 'pop-title' }, 'Palm rejection'),
       segmented(PALM_MODES, settings.palm, (v) => {
         settings.palm = v
         saveSettings()
         applyPalm()
       }),
-      h('p', { class: 'muted small' }, 'Forte: ignora la mano mentre la penna scrive, è vicina allo schermo o ha appena scritto lì accanto. Due dita: in più, un dito solo non scorre mai la pagina (scorri e ingrandisci con due dita). Normale: solo mentre la penna scrive e subito dopo.'),
-      toggle('Disegna anche con il dito', settings.fingerDraw, (v) => { settings.fingerDraw = v; saveSettings() }),
-      toggle('Tocco con 2 dita = Annulla, 3 dita = Ripeti', settings.twoFingerUndo, (v) => { settings.twoFingerUndo = v; saveSettings() }),
-      toggle('Tieni premuto a fine tratto per creare forme', settings.shapeHold, (v) => { settings.shapeHold = v; saveSettings() }),
+      h('p', { class: 'muted small' }, 'Strong: ignores the hand while the pen writes, hovers near the screen or has just written close by. Two fingers: also, one finger never scrolls the page (scroll and zoom with two fingers). Normal: only while the pen writes and right after.'),
+      toggle('Draw with a finger too', settings.fingerDraw, (v) => { settings.fingerDraw = v; saveSettings() }),
+      toggle('2-finger tap = Undo, 3-finger tap = Redo', settings.twoFingerUndo, (v) => { settings.twoFingerUndo = v; saveSettings() }),
+      toggle('Hold at the end of a stroke to make shapes', settings.shapeHold, (v) => { settings.shapeHold = v; saveSettings() }),
       penButtonsSection()
     ),
-    actions: [{ label: 'Chiudi', primary: true }],
+    actions: [{ label: 'Close', primary: true }],
     onClose: () => {
       cancelLearn()
       offMonitor?.()
@@ -788,46 +788,46 @@ export function openSettingsDialog() {
 
 let offMonitor = null
 
-// Configurazione dei due tasti della penna: azione + rilevamento del segnale.
+// Setup of the two pen buttons: action + signal detection.
 function penButtonsSection() {
-  const testLabel = h('div', { class: 'pb-test' }, 'Premi un tasto della penna per provarlo…')
-  const log = h('div', { class: 'pb-log' }, 'Segnali ricevuti: nessuno')
+  const testLabel = h('div', { class: 'pb-test' }, 'Press a pen button to test it…')
+  const log = h('div', { class: 'pb-log' }, 'Signals received: none')
   const lines = []
   offMonitor?.()
   offMonitor = onRawPenSignal((id, down, device) => {
     if (!down) return
     const b = settings.penButtons.find((x) => x.ids.includes(id))
-    testLabel.textContent = b ? `${b.name}: ${actionInfo(b.action).label}` : `Segnale "${id}" non assegnato: usa "Rileva"`
+    testLabel.textContent = b ? `${b.name}: ${actionInfo(b.action).label}` : `Signal "${id}" not assigned: use "Detect"`
     testLabel.classList.add('hit')
     clearTimeout(testLabel._t)
     testLabel._t = setTimeout(() => testLabel.classList.remove('hit'), 900)
     lines.unshift(device ? `${id} — ${device}` : id)
     lines.length = Math.min(lines.length, 5)
-    log.replaceChildren('Segnali ricevuti:', ...lines.map((l) => h('div', null, l)))
+    log.replaceChildren('Signals received:', ...lines.map((l) => h('div', null, l)))
   })
   const rows = settings.penButtons.map((b, i) => {
     const sel = h('select', { class: 'input' }, ...PEN_ACTIONS.map((a) => h('option', { value: a.id }, a.label)))
     sel.value = b.action
     sel.addEventListener('change', () => setBinding(i, { action: sel.value }))
-    const learn = h('button', { class: 'btn' }, icon('pen', 18), 'Rileva')
+    const learn = h('button', { class: 'btn' }, icon('pen', 18), 'Detect')
     const status = h('span', { class: 'muted small' }, '')
     learn.addEventListener('click', async () => {
       learn.disabled = true
-      status.textContent = 'Premi ora il ' + b.name.toLowerCase() + ' della penna…'
+      status.textContent = 'Now press ' + b.name + ' on the pen…'
       const ids = await learnButton()
       learn.disabled = false
       if (ids.length) {
         setBinding(i, { ids })
-        status.textContent = `Rilevato ✓ (${ids.join(', ')})`
-      } else status.textContent = 'Nessun segnale ricevuto: HyperOS potrebbe usare questo tasto per una sua funzione.'
+        status.textContent = `Detected ✓ (${ids.join(', ')})`
+      } else status.textContent = 'No signal received: HyperOS may be using this button for one of its own features.'
     })
     return h('div', { class: 'pen-btn-row' }, h('div', { class: 'pen-btn-head' }, h('b', null, b.name), learn), sel, status)
   })
   return h(
     'div',
     { class: 'pen-buttons' },
-    h('div', { class: 'pop-title' }, 'Tasti della penna'),
-    h('p', { class: 'muted small' }, 'Dai un tocco breve al tasto: se lo tieni premuto, HyperOS può avviare lo screenshot o la nota rapida. Per questo le azioni "finché tieni premuto" potrebbero non funzionare bene.'),
+    h('div', { class: 'pop-title' }, 'Pen buttons'),
+    h('p', { class: 'muted small' }, 'Give the button a short tap: if you hold it, HyperOS may start a screenshot or a quick note. For the same reason the "while held" actions may not work well.'),
     ...rows,
     testLabel,
     log

@@ -1,4 +1,4 @@
-// Componenti UI: toast, popover, menu, dialoghi, selettore colore, slider, interruttori.
+// UI components: toasts, popovers, menus, dialogs, color picker, sliders, switches.
 import { h, clamp, hexToRgb, rgbToHex, hsvToRgb, rgbToHsv } from './util.js'
 import { icon } from './icons.js'
 
@@ -15,7 +15,7 @@ export function toast(msg, ms = 2200) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms)
 }
 
-// --- Popover ancorato a un elemento ---
+// --- Popover anchored to an element ---
 let openPop = null
 export function closePopover() {
   if (openPop) {
@@ -57,7 +57,7 @@ export function popover(anchor, content, { placement = 'below', className = '', 
   return pop
 }
 
-// Menu a lista: items = [{label, icon, danger, onClick}] oppure '-' per separatore
+// List menu: items = [{label, icon, danger, onClick}] or '-' for a separator
 export function menu(anchor, items, opts) {
   const list = h('div', { class: 'menu' })
   for (const it of items) {
@@ -85,7 +85,7 @@ export function menu(anchor, items, opts) {
   return popover(anchor, list, { className: 'menu-pop', ...opts })
 }
 
-// --- Dialoghi modali ---
+// --- Modal dialogs ---
 export function openDialog({ title, body, actions = [], className = '', onClose }) {
   closePopover()
   const backdrop = h('div', { class: 'dialog-backdrop' })
@@ -118,14 +118,14 @@ export function openDialog({ title, body, actions = [], className = '', onClose 
   return { close, box }
 }
 
-export function confirmDialog(message, { okLabel = 'Conferma', danger = false, title = '' } = {}) {
+export function confirmDialog(message, { okLabel = 'Confirm', danger = false, title = '' } = {}) {
   return new Promise((resolve) => {
     let result = false
     openDialog({
       title,
       body: h('p', null, message),
       actions: [
-        { label: 'Annulla' },
+        { label: 'Cancel' },
         { label: okLabel, primary: !danger, danger, onClick: () => { result = true } },
       ],
       onClose: () => resolve(result),
@@ -141,7 +141,7 @@ export function promptDialog(title, value = '', { okLabel = 'OK', placeholder = 
       title,
       body: input,
       actions: [
-        { label: 'Annulla' },
+        { label: 'Cancel' },
         { label: okLabel, primary: true, onClick: () => { result = input.value.trim() } },
       ],
       onClose: () => resolve(result),
@@ -172,7 +172,7 @@ export function progressDialog(title) {
   }
 }
 
-// --- Controlli ---
+// --- Controls ---
 export function slider({ min, max, step = 0.1, value, onInput, format = (v) => v }) {
   const out = h('span', { class: 'slider-value' }, format(value))
   const input = h('input', { type: 'range', min, max, step, value, class: 'slider' })
@@ -213,7 +213,7 @@ export const PALETTE = [
   '#e8590c', '#f08c00', '#ffd43b', '#6741d9', '#9c36b5',
 ]
 
-// Selettore colore HSV + tavolozza
+// HSV color picker + palette
 export function colorPicker(initial, onChange, { recent = [] } = {}) {
   let [hue, sat, val] = rgbToHsv(...hexToRgb(initial))
   const W = 232, H = 140
@@ -286,7 +286,7 @@ export function colorPicker(initial, onChange, { recent = [] } = {}) {
   }
   for (const c of PALETTE) pal.append(h('button', { class: 'cp-dot', style: { background: c }, onclick: () => setHex(c) }))
   const rec = recent.length
-    ? h('div', { class: 'cp-recent' }, h('span', { class: 'cp-label' }, 'Recenti'), ...recent.map((c) => h('button', { class: 'cp-dot', style: { background: c }, onclick: () => setHex(c) })))
+    ? h('div', { class: 'cp-recent' }, h('span', { class: 'cp-label' }, 'Recent'), ...recent.map((c) => h('button', { class: 'cp-dot', style: { background: c }, onclick: () => setHex(c) })))
     : null
   draw()
   return h('div', { class: 'color-picker' }, pal, rec, sv, hueBar, h('div', { class: 'cp-row' }, swatch, hex))

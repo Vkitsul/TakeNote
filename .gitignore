@@ -1,20 +1,20 @@
-# Dipendenze e build
+# Dependencies and build output
 node_modules/
 dist/
 *.apk
 *.aab
 *.log
 
-# Copiati da node_modules con "npm install" (scripts/copy-pdfjs-assets.mjs)
+# Copied from node_modules by "npm install" (scripts/copy-pdfjs-assets.mjs)
 public/pdfjs/
 
-# Chiave di firma dell'app e password: MAI nel repository
+# App signing key and passwords: NEVER in the repository
 android-signing/
 android/keystore.properties
 *.jks
 *.keystore
 
-# Configurazione locale
+# Local configuration
 android/local.properties
 .claude/
 .vscode/

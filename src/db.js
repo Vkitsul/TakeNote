@@ -1,4 +1,4 @@
-// Archivio locale su IndexedDB: quaderni, pagine, file (PDF/immagini), snip, cartelle, impostazioni.
+// Local IndexedDB store: notebooks, pages, files (PDFs/images), snips, folders, settings.
 
 const DB_NAME = 'takenote'
 const VERSION = 1
@@ -86,7 +86,7 @@ export async function delMany(store, keys) {
   return done(tx)
 }
 
-// Scrive in più store con una sola transazione: ops = [{store, put?: value, del?: key}]
+// Writes to several stores in one transaction: ops = [{store, put?: value, del?: key}]
 export async function batch(ops) {
   if (!ops.length) return
   const stores = [...new Set(ops.map((o) => o.store))]

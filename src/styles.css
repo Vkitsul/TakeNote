@@ -68,7 +68,7 @@ button:disabled {
   color: var(--muted);
 }
 
-/* ---------- Bottoni ---------- */
+/* ---------- Buttons ---------- */
 .icon-btn {
   width: 42px;
   height: 42px;
@@ -176,7 +176,7 @@ button:disabled {
   transform: translate(-50%, 0);
 }
 
-/* ---------- Popover e menu ---------- */
+/* ---------- Popovers and menus ---------- */
 .popover {
   position: fixed;
   z-index: 300;
@@ -237,7 +237,7 @@ button:disabled {
   margin-top: 4px;
 }
 
-/* ---------- Dialoghi ---------- */
+/* ---------- Dialogs ---------- */
 .dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -329,7 +329,7 @@ select.input {
   color: var(--muted);
 }
 
-/* ---------- Controlli ---------- */
+/* ---------- Controls ---------- */
 .slider-row {
   display: flex;
   align-items: center;
@@ -413,7 +413,7 @@ select.input {
   box-shadow: 0 1px 3px rgba(20, 28, 45, 0.12);
 }
 
-/* ---------- Selettore colore ---------- */
+/* ---------- Color picker ---------- */
 .color-picker {
   display: flex;
   flex-direction: column;
@@ -476,7 +476,7 @@ select.input {
   color: var(--muted);
 }
 
-/* ---------- Sfondi (anteprime) ---------- */
+/* ---------- Backgrounds (previews) ---------- */
 .tpl-options,
 .tpl-grid {
   display: flex;
@@ -549,7 +549,7 @@ select.input {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16), 0 0 0 3px var(--surface), 0 0 0 5px var(--accent);
 }
 
-/* ---------- Libreria ---------- */
+/* ---------- Library ---------- */
 .library {
   display: flex;
   flex-direction: column;
@@ -1068,7 +1068,7 @@ select.input {
   background: rgba(31, 36, 51, 0.7);
 }
 
-/* ---------- Pannelli laterali ---------- */
+/* ---------- Side panels ---------- */
 .side-panel {
   position: absolute;
   top: 0;
@@ -1243,7 +1243,7 @@ select.input {
   line-height: 1.5;
 }
 
-/* ---------- Schermi stretti (tablet in verticale) ---------- */
+/* ---------- Narrow screens (tablet in portrait) ---------- */
 @media (max-width: 900px) {
   .ed-title {
     max-width: 120px;
@@ -1292,7 +1292,7 @@ select.input {
   }
 }
 
-/* ---------- Barra penne flottante ---------- */
+/* ---------- Floating pen bar ---------- */
 .penbar {
   position: absolute;
   z-index: 12;
@@ -1417,7 +1417,7 @@ select.input {
   width: 100%;
 }
 
-/* ---------- Tasti penna (impostazioni) ---------- */
+/* ---------- Pen buttons (settings) ---------- */
 .pen-buttons {
   display: flex;
   flex-direction: column;
@@ -1455,7 +1455,7 @@ select.input {
   border-color: var(--accent);
 }
 
-/* ---------- Modalità scura ---------- */
+/* ---------- Dark mode ---------- */
 html.dark {
   --bg: #121316;
   --surface: #1c1d21;
@@ -1470,7 +1470,7 @@ html.dark {
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
-/* miniature e snip nel vassoio; le pagine sono già invertite quando vengono disegnate */
+/* thumbnails and snips in the tray; pages are already inverted when they are drawn */
 html.dark .pg-thumb canvas,
 html.dark .nb-cover img,
 html.dark .snip-item img,
@@ -1555,7 +1555,7 @@ html.dark .toast {
   color: #15171c;
 }
 
-/* ---------- Backup automatico ---------- */
+/* ---------- Automatic backup ---------- */
 .backup-dialog {
   display: flex;
   flex-direction: column;

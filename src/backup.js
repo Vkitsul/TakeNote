@@ -1,4 +1,4 @@
-// Backup/ripristino in un file .takenote (zip): quaderni, pagine, PDF, snip, cartelle.
+// Backup/restore to a .takenote file (zip): notebooks, pages, PDFs, snips, folders.
 import { Zip, ZipDeflate, ZipPassThrough, unzipSync, strToU8, strFromU8 } from 'fflate'
 import * as db from './db.js'
 
@@ -24,8 +24,8 @@ function decodePage(p) {
   return { ...p, items: p.items.map((it) => (it.t === 's' ? { ...it, pts: b64ToF32(it.pts) } : it)) }
 }
 
-// Scrive il backup a pezzi: write(chunk: Uint8Array) viene chiamata in ordine (anche async).
-// Così anche una libreria con molti PDF non deve stare tutta in memoria. notebookIds: null = tutto.
+// Writes the backup in pieces: write(chunk: Uint8Array) is called in order (may be async).
+// So even a library with many PDFs never has to fit in memory. notebookIds: null = everything.
 export async function writeBackup(write, notebookIds = null, onProgress) {
   let notebooks = await db.all('notebooks')
   if (notebookIds) notebooks = notebooks.filter((n) => notebookIds.includes(n.id))
@@ -87,14 +87,14 @@ export async function writeBackup(write, notebookIds = null, onProgress) {
   return { notebooks: notebooks.length, files: filesMeta.length }
 }
 
-// Backup in memoria (browser e backup di un singolo quaderno).
+// In-memory backup (browser, and backup of a single notebook).
 export async function createBackup(notebookIds = null, onProgress) {
   const parts = []
   await writeBackup(async (c) => parts.push(c), notebookIds, onProgress)
   return new Blob(parts, { type: 'application/zip' })
 }
 
-// "Impronta" dei dati: cambia quando si modifica qualcosa, per non rifare backup identici.
+// Data "fingerprint": changes whenever something is edited, to skip identical backups.
 export async function dataSignature() {
   const [notebooks, snips, folders] = await Promise.all([db.all('notebooks'), db.all('snips'), db.all('folders')])
   const maxNb = notebooks.reduce((m, n) => Math.max(m, n.updatedAt || 0), 0)
@@ -105,9 +105,9 @@ export async function dataSignature() {
 export async function restoreBackup(file, onProgress) {
   const data = unzipSync(new Uint8Array(await file.arrayBuffer()))
   const mf = data['manifest.json']
-  if (!mf) throw new Error('File di backup non valido')
+  if (!mf) throw new Error('Invalid backup file')
   const manifest = JSON.parse(strFromU8(mf))
-  if (manifest.app !== 'TakeNote') throw new Error('File di backup non valido')
+  if (manifest.app !== 'TakeNote') throw new Error('Invalid backup file')
   const files = manifest.files || []
   let i = 0
   for (const f of files) {
@@ -128,7 +128,7 @@ export async function restoreBackup(file, onProgress) {
   return { notebooks: (manifest.notebooks || []).length }
 }
 
-// Elimina i file non più usati da nessuna pagina o snip.
+// Deletes files no longer used by any page or snip.
 export async function collectGarbage() {
   const used = new Set()
   for (const s of await db.all('snips')) used.add(s.fileId)

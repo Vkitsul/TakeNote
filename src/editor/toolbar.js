@@ -1,4 +1,4 @@
-// Barra degli strumenti dell'editor.
+// Editor toolbar.
 import { h } from '../util.js'
 import { icon } from '../icons.js'
 import { settings, saveSettings, pushRecentColor } from '../settings.js'
@@ -7,10 +7,10 @@ import { popover, colorPicker, slider, toggle, segmented, closePopover, confirmD
 import { displayColor, isDark, setDark } from '../theme.js'
 
 const TOOLS = [
-  { id: 'pen', label: 'Penna' },
-  { id: 'highlighter', label: 'Evidenziatore', icon: 'highlighter' },
-  { id: 'eraser', label: 'Gomma', icon: 'eraser' },
-  { id: 'lasso', label: 'Lazo', icon: 'lasso' },
+  { id: 'pen', label: 'Pen' },
+  { id: 'highlighter', label: 'Highlighter', icon: 'highlighter' },
+  { id: 'eraser', label: 'Eraser', icon: 'eraser' },
+  { id: 'lasso', label: 'Lasso', icon: 'lasso' },
   { id: 'snip', label: 'Snip', icon: 'snip' },
 ]
 
@@ -22,8 +22,8 @@ export class Toolbar {
     const left = h(
       'div',
       { class: 'bar-group bar-left' },
-      h('button', { class: 'icon-btn', title: 'Libreria', onclick: () => ed.close() }, icon('back')),
-      (this.title = h('button', { class: 'ed-title', title: 'Rinomina', onclick: () => ed.rename() }, ed.doc.nb.title))
+      h('button', { class: 'icon-btn', title: 'Library', onclick: () => ed.close() }, icon('back')),
+      (this.title = h('button', { class: 'ed-title', title: 'Rename', onclick: () => ed.rename() }, ed.doc.nb.title))
     )
     const tools = h('div', { class: 'bar-group bar-tools' })
     for (const t of TOOLS) {
@@ -32,18 +32,18 @@ export class Toolbar {
       tools.append(b)
     }
     this.context = h('div', { class: 'bar-group bar-context' })
-    this.themeBtn = h('button', { class: 'icon-btn', title: 'Modalità scura', onclick: () => setDark(!isDark()) }, icon(isDark() ? 'sun' : 'moon'))
-    this.undoBtn = h('button', { class: 'icon-btn', title: 'Annulla', onclick: () => ed.undo() }, icon('undo'))
-    this.redoBtn = h('button', { class: 'icon-btn', title: 'Ripeti', onclick: () => ed.redo() }, icon('redo'))
+    this.themeBtn = h('button', { class: 'icon-btn', title: 'Dark mode', onclick: () => setDark(!isDark()) }, icon(isDark() ? 'sun' : 'moon'))
+    this.undoBtn = h('button', { class: 'icon-btn', title: 'Undo', onclick: () => ed.undo() }, icon('undo'))
+    this.redoBtn = h('button', { class: 'icon-btn', title: 'Redo', onclick: () => ed.redo() }, icon('redo'))
     const right = h(
       'div',
       { class: 'bar-group bar-right' },
       this.themeBtn,
       this.undoBtn,
       this.redoBtn,
-      h('button', { class: 'icon-btn', title: 'Pagine', onclick: () => ed.pagesPanel.toggle() }, icon('pages')),
-      h('button', { class: 'icon-btn', title: 'Snip salvati', onclick: () => ed.snipsPanel.toggle() }, icon('tray')),
-      h('button', { class: 'icon-btn', title: 'Altro', onclick: (e) => ed.openMenu(e.currentTarget) }, icon('more'))
+      h('button', { class: 'icon-btn', title: 'Pages', onclick: () => ed.pagesPanel.toggle() }, icon('pages')),
+      h('button', { class: 'icon-btn', title: 'Saved snips', onclick: () => ed.snipsPanel.toggle() }, icon('tray')),
+      h('button', { class: 'icon-btn', title: 'More', onclick: (e) => ed.openMenu(e.currentTarget) }, icon('more'))
     )
     this.el.append(left, tools, this.context, right)
     this.refresh()
@@ -75,7 +75,7 @@ export class Toolbar {
       }
     }
     this.themeBtn.replaceChildren(icon(isDark() ? 'sun' : 'moon'))
-    this.themeBtn.title = isDark() ? 'Modalità chiara' : 'Modalità scura'
+    this.themeBtn.title = isDark() ? 'Light mode' : 'Dark mode'
     this.refreshContext()
     this.refreshHistory()
     this.ed.penBar?.sync()
@@ -94,7 +94,7 @@ export class Toolbar {
     if (tool === 'pen' || tool === 'highlighter') {
       const cfg = settings[tool]
       cfg.colors.forEach((col, i) => {
-        const b = h('button', { class: 'swatch' + (col === cfg.color ? ' active' : ''), style: { '--c': displayColor(col) }, title: 'Colore' })
+        const b = h('button', { class: 'swatch' + (col === cfg.color ? ' active' : ''), style: { '--c': displayColor(col) }, title: 'Color' })
         b.addEventListener('click', () => {
           if (cfg.color === col) this.editSwatch(tool, i, b)
           else {
@@ -111,7 +111,7 @@ export class Toolbar {
         const dot = Math.max(3, Math.min(18, (w / maxW) * 16 + (tool === 'highlighter' ? 0 : 2)))
         const b = h(
           'button',
-          { class: 'width-btn' + (Math.abs(w - cfg.width) < 0.01 ? ' active' : ''), title: 'Spessore ' + w },
+          { class: 'width-btn' + (Math.abs(w - cfg.width) < 0.01 ? ' active' : ''), title: 'Width ' + w },
           h('span', { class: 'width-dot', style: { width: dot + 'px', height: dot + 'px', background: tool === 'highlighter' ? displayColor(cfg.color) : 'currentColor' } })
         )
         b.addEventListener('click', () => {
@@ -128,8 +128,8 @@ export class Toolbar {
       c.append(
         segmented(
           [
-            { value: 'stroke', label: 'Tratto intero', text: 'Tratto', icon: 'eraseStroke' },
-            { value: 'area', label: 'Parziale', text: 'Parziale', icon: 'eraseArea' },
+            { value: 'stroke', label: 'Whole stroke', text: 'Stroke', icon: 'eraseStroke' },
+            { value: 'area', label: 'Partial', text: 'Partial', icon: 'eraseArea' },
           ],
           settings.eraser.mode,
           (v) => {
@@ -142,7 +142,7 @@ export class Toolbar {
       settings.eraser.sizes.forEach((sz) => {
         const b = h(
           'button',
-          { class: 'width-btn' + (sz === settings.eraser.size ? ' active' : ''), title: 'Dimensione ' + sz },
+          { class: 'width-btn' + (sz === settings.eraser.size ? ' active' : ''), title: 'Size ' + sz },
           h('span', { class: 'width-dot ring', style: { width: Math.min(22, sz * 0.75) + 'px', height: Math.min(22, sz * 0.75) + 'px' } })
         )
         b.addEventListener('click', () => {
@@ -153,14 +153,14 @@ export class Toolbar {
         c.append(b)
       })
     } else if (tool === 'lasso') {
-      c.append(h('span', { class: 'bar-hint' }, 'Cerchia o tocca per selezionare'))
-      if (this.ed.clipboard) c.append(h('button', { class: 'chip', onclick: () => this.ed.paste() }, icon('copy', 18), 'Incolla'))
+      c.append(h('span', { class: 'bar-hint' }, 'Circle or tap to select'))
+      if (this.ed.clipboard) c.append(h('button', { class: 'chip', onclick: () => this.ed.paste() }, icon('copy', 18), 'Paste'))
     } else if (tool === 'snip') {
       c.append(
         segmented(
           [
-            { value: 'rect', label: 'Rettangolo', text: 'Rettangolo', icon: 'rect' },
-            { value: 'free', label: 'Forma libera', text: 'Libero', icon: 'freeform' },
+            { value: 'rect', label: 'Rectangle', text: 'Rectangle', icon: 'rect' },
+            { value: 'free', label: 'Freeform', text: 'Freeform', icon: 'freeform' },
           ],
           settings.snip.mode,
           (v) => {
@@ -168,7 +168,7 @@ export class Toolbar {
             saveSettings()
           }
         ),
-        h('button', { class: 'chip', onclick: () => this.ed.snipsPanel.open() }, icon('tray', 18), 'Snip salvati')
+        h('button', { class: 'chip', onclick: () => this.ed.snipsPanel.open() }, icon('tray', 18), 'Saved snips')
       )
     }
   }
@@ -197,7 +197,7 @@ export class Toolbar {
     const body = h(
       'div',
       { class: 'pop-section' },
-      h('div', { class: 'pop-title' }, 'Spessore'),
+      h('div', { class: 'pop-title' }, 'Width'),
       slider({
         min: hl ? 3 : 0.4,
         max: hl ? 40 : 12,
@@ -217,7 +217,7 @@ export class Toolbar {
   openToolOptions(id, anchor) {
     const body = h('div', { class: 'pop-section tool-options' })
     if (id === 'pen') {
-      body.append(h('div', { class: 'pop-title' }, 'Tipo di penna'))
+      body.append(h('div', { class: 'pop-title' }, 'Pen type'))
       const grid = h('div', { class: 'pen-types five' })
       for (const k of ['plain', 'fountain', 'ballpoint', 'brush', 'pencil']) {
         const b = h('button', { class: 'pen-type' + (settings.pen.type === k ? ' active' : '') }, icon(k, 26), h('span', null, PEN_TYPES[k].label))
@@ -232,7 +232,7 @@ export class Toolbar {
       }
       body.append(
         grid,
-        h('div', { class: 'pop-title' }, 'Spessore'),
+        h('div', { class: 'pop-title' }, 'Width'),
         slider({
           min: 0.4, max: 12, step: 0.1, value: settings.pen.width, format: (v) => v.toFixed(1),
           onInput: (v) => {
@@ -242,11 +242,11 @@ export class Toolbar {
             saveSettings()
           },
         }),
-        toggle('Tieni premuto per forme (linea, cerchio, rettangolo)', settings.shapeHold, (v) => { settings.shapeHold = v; saveSettings() })
+        toggle('Hold for shapes (line, circle, rectangle)', settings.shapeHold, (v) => { settings.shapeHold = v; saveSettings() })
       )
     } else if (id === 'highlighter') {
       body.append(
-        h('div', { class: 'pop-title' }, 'Evidenziatore'),
+        h('div', { class: 'pop-title' }, 'Highlighter'),
         slider({
           min: 3, max: 40, step: 1, value: settings.highlighter.width, format: (v) => v.toFixed(0),
           onInput: (v) => {
@@ -256,12 +256,12 @@ export class Toolbar {
             saveSettings()
           },
         }),
-        toggle('Sempre linea dritta', settings.highlighter.straight, (v) => { settings.highlighter.straight = v; saveSettings() }),
-        toggle('Tieni premuto per forme', settings.shapeHold, (v) => { settings.shapeHold = v; saveSettings() })
+        toggle('Always a straight line', settings.highlighter.straight, (v) => { settings.highlighter.straight = v; saveSettings() }),
+        toggle('Hold for shapes', settings.shapeHold, (v) => { settings.shapeHold = v; saveSettings() })
       )
     } else if (id === 'eraser') {
       body.append(
-        h('div', { class: 'pop-title' }, 'Gomma'),
+        h('div', { class: 'pop-title' }, 'Eraser'),
         slider({
           min: 4, max: 60, step: 1, value: settings.eraser.size, format: (v) => v.toFixed(0),
           onInput: (v) => {
@@ -271,14 +271,14 @@ export class Toolbar {
             saveSettings()
           },
         }),
-        toggle('Cancella solo evidenziatore', settings.eraser.highlighterOnly, (v) => { settings.eraser.highlighterOnly = v; saveSettings() }),
+        toggle('Erase highlighter only', settings.eraser.highlighterOnly, (v) => { settings.eraser.highlighterOnly = v; saveSettings() }),
         h('button', {
           class: 'btn danger block',
           onclick: async () => {
             closePopover()
-            if (await confirmDialog('Cancellare tutto l\'inchiostro e gli snip della pagina corrente?', { okLabel: 'Cancella', danger: true })) this.ed.clearCurrentPage()
+            if (await confirmDialog('Erase all ink and snips on the current page?', { okLabel: 'Erase', danger: true })) this.ed.clearCurrentPage()
           },
-        }, 'Cancella pagina corrente')
+        }, 'Erase current page')
       )
     } else return
     popover(anchor, body, { onClose: () => this.refresh() })

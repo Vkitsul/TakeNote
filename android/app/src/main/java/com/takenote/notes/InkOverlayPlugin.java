@@ -8,7 +8,7 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import org.json.JSONException;
 
-/** Collega l'app web al livello nativo del tratto (InkOverlayView). */
+/** Connects the web app to the native stroke layer (InkOverlayView). */
 @CapacitorPlugin(name = "InkOverlay")
 public class InkOverlayPlugin extends Plugin {
 
@@ -33,7 +33,7 @@ public class InkOverlayPlugin extends Plugin {
         });
     }
 
-    /** Rifiuto del palmo: quanto a lungo e quanto lontano dalla penna le dita vengono ignorate. */
+    /** Palm rejection: how long and how far from the pen fingers are ignored. */
     @PluginMethod
     public void palm(PluginCall call) {
         final boolean enabled = Boolean.TRUE.equals(call.getBoolean("enabled", true));

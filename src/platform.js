@@ -1,4 +1,4 @@
-// Integrazione con Android (Capacitor) o browser: condivisione/salvataggio file, tasto indietro.
+// Android (Capacitor) or browser integration: sharing/saving files, back button.
 import { Capacitor } from '@capacitor/core'
 import { blobToBase64 } from './util.js'
 
@@ -11,7 +11,7 @@ async function nativeWrite(blob, filename, directory) {
   return res.uri
 }
 
-// Apre il menu di condivisione di Android (Drive, Files, email...) o scarica il file nel browser.
+// Opens the Android share sheet (Drive, Files, email...) or downloads the file in the browser.
 export async function shareFile(blob, filename, title = filename) {
   if (isNative) {
     const uri = await nativeWrite(blob, filename, 'Cache')
@@ -32,17 +32,17 @@ export async function shareFile(blob, filename, title = filename) {
   return 'downloaded'
 }
 
-// Condivide un file già scritto dall'app (uri file://), senza caricarlo in memoria.
+// Shares a file the app already wrote (file:// uri) without loading it into memory.
 export async function shareUri(uri, title) {
   const { Share } = await import('@capacitor/share')
   await Share.share({ title, files: [uri], dialogTitle: title })
 }
 
-// Salva direttamente in Documenti/TakeNote (Android) o scarica (browser).
+// Saves straight to Documents/TakeNote (Android) or downloads it (browser).
 export async function saveFile(blob, filename) {
   if (isNative) {
     await nativeWrite(blob, 'TakeNote/' + filename, 'Documents')
-    return 'Documenti/TakeNote/' + filename
+    return 'Documents/TakeNote/' + filename
   }
   downloadBlob(blob, filename)
   return filename
@@ -59,7 +59,7 @@ export function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 4000)
 }
 
-// Selettore file nativo (input file nascosto).
+// Native file picker (hidden file input).
 export function pickFile(accept, multiple = false) {
   return new Promise((resolve) => {
     const input = document.createElement('input')
@@ -96,5 +96,5 @@ export async function initPlatform() {
 }
 
 export function safeFileName(name) {
-  return (name || 'quaderno').replace(/[\\/:*?"<>|]+/g, '_').trim().slice(0, 80) || 'quaderno'
+  return (name || 'notebook').replace(/[\\/:*?"<>|]+/g, '_').trim().slice(0, 80) || 'notebook'
 }

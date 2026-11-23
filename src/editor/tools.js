@@ -1,5 +1,5 @@
-// Strumenti: penna, evidenziatore, gomma, lazo, snip.
-// Ogni strumento riceve campioni { cx, cy, p, t, sp } (coordinate client, pressione, tempo, pressione simulata).
+// Tools: pen, highlighter, eraser, lasso, snip.
+// Every tool receives samples { cx, cy, p, t, sp } (client coordinates, pressure, time, simulated pressure).
 import { settings } from '../settings.js'
 import { PEN_TYPES, makeStroke, strokeOutline, outlineToPath, polylinePath, drawStroke, strokeHitsSegment, itemBB } from '../ink.js'
 import { bbIntersects, bbUnion, distSqToSegment, pointInPolygon } from '../util.js'
@@ -81,7 +81,7 @@ export class PenTool {
       }
       const dx = s.cx - this.lastCx, dy = s.cy - this.lastCy
       if (dx * dx + dy * dy < 0.2) {
-        // stesso punto: aggiorna solo la pressione
+        // same point: update the pressure only
         if (!this.line) {
           const n = this.pts.length
           this.pts[n - 1] = Math.max(this.pts[n - 1], s.p)
@@ -107,7 +107,7 @@ export class PenTool {
     this.schedule()
   }
 
-  // Disegna al massimo ogni 4 ms: i campioni della penna arrivano più veloci dello schermo.
+  // Draws at most every 4 ms: pen samples arrive faster than the screen refreshes.
   schedule() {
     const now = performance.now()
     if (now - this.lastDraw >= 4) this.draw()
@@ -152,7 +152,7 @@ export class PenTool {
     this.ed.history.commitItems(page.id, before, [...before, stroke], { type: 'append', item: stroke })
   }
 
-  // Tratto disegnato dal livello nativo Android: arriva finito, in coordinate client [x,y,x,y,...].
+  // Stroke drawn by the native Android layer: it arrives finished, in client coordinates [x,y,x,y,...].
   commitNative(flat) {
     const v = this.ed.view
     const first = v.toWorld(flat[0], flat[1])
@@ -188,7 +188,7 @@ export class PenTool {
   }
 }
 
-// --- Gomma ---
+// --- Eraser ---
 function densify(pts, maxStep) {
   const out = [pts[0], pts[1], pts[2]]
   for (let i = 3; i < pts.length; i += 3) {
@@ -328,7 +328,7 @@ export class EraserTool {
   }
 }
 
-// --- Lazo ---
+// --- Lasso ---
 function drawDashedPath(v, poly, closed, fill) {
   const ctx = v.liveCtx
   v.clearLive()
@@ -447,7 +447,7 @@ export class LassoTool {
   }
 }
 
-// --- Snip (ritaglio) ---
+// --- Snip (clipping) ---
 export class SnipTool {
   constructor(ed) {
     this.ed = ed

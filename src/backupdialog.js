@@ -1,4 +1,4 @@
-// Schermata "Backup automatico" e indicatore di stato nella libreria.
+// "Automatic backup" screen and status indicator in the library.
 import { h, formatDate } from './util.js'
 import { icon } from './icons.js'
 import { settings, saveSettings } from './settings.js'
@@ -13,22 +13,22 @@ export function openAutoBackupDialog() {
   const render = () => {
     body.replaceChildren()
     if (!autoBackupSupported) {
-      body.append(h('p', { class: 'muted' }, 'Il backup automatico è disponibile nell’app Android. Qui nel browser usa “Backup completo”.'))
+      body.append(h('p', { class: 'muted' }, 'Automatic backup is available in the Android app. Here in the browser, use “Full backup”.'))
       return
     }
     body.append(
-      toggle('Backup automatico attivo', cfg.enabled, (v) => {
+      toggle('Automatic backup on', cfg.enabled, (v) => {
         cfg.enabled = v
         saveSettings()
         render()
       })
     )
     if (!cfg.enabled) {
-      body.append(h('p', { class: 'muted small' }, 'Senza backup, se il tablet si rompe o disinstalli l’app i quaderni vanno persi.'))
+      body.append(h('p', { class: 'muted small' }, 'Without a backup, your notebooks are lost if the tablet breaks or you uninstall the app.'))
       return
     }
     body.append(
-      h('div', { class: 'pop-title' }, 'Quando'),
+      h('div', { class: 'pop-title' }, 'When'),
       segmented(
         FREQUENCIES.map((f) => ({ value: f.value, label: f.label, text: f.label })),
         cfg.frequency,
@@ -37,8 +37,8 @@ export function openAutoBackupDialog() {
           saveSettings()
         }
       ),
-      h('p', { class: 'muted small' }, 'Il backup parte solo se hai modificato qualcosa dall’ultima volta.'),
-      h('div', { class: 'pop-title' }, 'Dove')
+      h('p', { class: 'muted small' }, 'A backup runs only if you changed something since the last one.'),
+      h('div', { class: 'pop-title' }, 'Where')
     )
 
     const option = (value, ic, title, desc, extra) => {
@@ -61,37 +61,37 @@ export function openAutoBackupDialog() {
     const choose = async () => {
       try {
         await pickDriveTarget()
-        toast('Destinazione salvata: faccio subito un backup')
+        toast('Destination saved: backing up now')
         render()
         backupNow()
       } catch (e) {
-        if (e?.message !== 'cancelled') toast('Impossibile usare quel file')
+        if (e?.message !== 'cancelled') toast('That file cannot be used')
       }
     }
     const driveExtra = h(
       'div',
       { class: 'dest-extra' },
-      cfg.uri ? h('span', { class: 'dest-file' }, icon('file', 16), cfg.label || 'File scelto') : null,
-      h('button', { class: 'btn small-btn', onclick: choose }, cfg.uri ? 'Cambia' : 'Scegli su Drive…')
+      cfg.uri ? h('span', { class: 'dest-file' }, icon('file', 16), cfg.label || 'Chosen file') : null,
+      h('button', { class: 'btn small-btn', onclick: choose }, cfg.uri ? 'Change' : 'Choose on Drive…')
     )
     body.append(
       option(
         'drive',
         'backup',
-        'Google Drive (o un’altra app)',
-        'Si apre il selettore file: tocca ☰ → Drive, scegli una cartella e Salva. Il file viene aggiornato a ogni backup.',
+        'Google Drive (or another app)',
+        'The file picker opens: tap ☰ → Drive, choose a folder and tap Save. The file is updated on every backup.',
         driveExtra
       ),
-      option('device', 'folder', 'Memoria del tablet', `Documenti/TakeNote/Backup, ultime ${cfg.keep || 5} copie. Non protegge se perdi il tablet.`)
+      option('device', 'folder', 'Tablet storage', `Documents/TakeNote/Backup, latest ${cfg.keep || 5} copies. Does not protect you if you lose the tablet.`)
     )
 
     const status = h('div', { class: 'backup-status' })
     const paintStatus = (running) => {
       status.className = 'backup-status' + (cfg.lastError && !running ? ' error' : '')
-      if (running) status.textContent = 'Backup in corso…'
-      else if (cfg.lastError) status.textContent = `Ultimo tentativo non riuscito: ${cfg.lastError}`
-      else if (cfg.lastAt) status.textContent = `Ultimo backup: ${formatDate(cfg.lastAt)}`
-      else status.textContent = 'Nessun backup ancora eseguito.'
+      if (running) status.textContent = 'Backing up…'
+      else if (cfg.lastError) status.textContent = `Last attempt failed: ${cfg.lastError}`
+      else if (cfg.lastAt) status.textContent = `Last backup: ${formatDate(cfg.lastAt)}`
+      else status.textContent = 'No backup yet.'
     }
     paintStatus(isBackupRunning())
     offStatus?.()
@@ -100,26 +100,26 @@ export function openAutoBackupDialog() {
   }
 
   const backupNow = async () => {
-    const prog = progressDialog('Backup in corso')
+    const prog = progressDialog('Backing up')
     const ok = await runBackup({ onProgress: (f) => prog.set(f) })
     prog.close()
-    toast(ok ? 'Backup completato' : 'Backup non riuscito: ' + settings.autoBackup.lastError, 3500)
+    toast(ok ? 'Backup complete' : 'Backup failed: ' + settings.autoBackup.lastError, 3500)
     render()
   }
 
   render()
   openDialog({
-    title: 'Backup automatico',
+    title: 'Automatic backup',
     className: 'wide',
     body,
-    actions: autoBackupSupported ? [{ label: 'Esegui ora', onClick: () => (backupNow(), false) }, { label: 'Chiudi', primary: true }] : [{ label: 'Chiudi', primary: true }],
+    actions: autoBackupSupported ? [{ label: 'Run now', onClick: () => (backupNow(), false) }, { label: 'Close', primary: true }] : [{ label: 'Close', primary: true }],
     onClose: () => offStatus?.(),
   })
 }
 
-// Piccolo indicatore nella barra della libreria (in corso / completato / errore).
+// Small indicator in the library bar (running / done / error).
 export function backupStatusChip() {
-  const chip = h('button', { class: 'backup-chip', title: 'Backup automatico', onclick: () => openAutoBackupDialog() })
+  const chip = h('button', { class: 'backup-chip', title: 'Automatic backup', onclick: () => openAutoBackupDialog() })
   let hideTimer = 0
   const show = (cls, text) => {
     chip.className = 'backup-chip show ' + cls
@@ -129,9 +129,9 @@ export function backupStatusChip() {
     clearTimeout(hideTimer)
     if (s?.state === 'running' || (!s && isBackupRunning())) show('running', 'Backup…')
     else if (s?.state === 'done') {
-      show('done', 'Backup fatto')
+      show('done', 'Backup done')
       hideTimer = setTimeout(() => (chip.className = 'backup-chip'), 3000)
-    } else if (s?.state === 'error' || settings.autoBackup.lastError) show('error', 'Backup non riuscito')
+    } else if (s?.state === 'error' || settings.autoBackup.lastError) show('error', 'Backup failed')
     else chip.className = 'backup-chip'
   }
   paint(null)

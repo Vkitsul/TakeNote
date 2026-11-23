@@ -1,29 +1,29 @@
-// Tasti della penna configurabili.
-// I segnali arrivano da due fonti, entrambe tradotte in un id testuale:
-//  - Android (MainActivity): 'btn:<bit>' dallo stato dei pulsanti, 'key:<keycode>' o 'scan:<code>' dai tasti fisici
-//    (le penne Xiaomi usano 'key:92' e 'key:93', cioè Pagina su/giù)
-//  - Pointer Events del WebView/browser: 'pbtn:<bit>' dai bit di `buttons` (2 = tasto laterale, 4 = secondo tasto)
-// Ogni tasto configurato raccoglie uno o più id: così una sola pressione segnalata da più fonti scatta una volta sola.
+// Configurable pen buttons.
+// Signals come from two sources, both turned into a text id:
+//  - Android (MainActivity): 'btn:<bit>' from the button state, 'key:<keycode>' or 'scan:<code>' from physical keys
+//    (Xiaomi pens use 'key:92' and 'key:93', i.e. Page up/down)
+//  - WebView/browser Pointer Events: 'pbtn:<bit>' from the `buttons` bits (2 = barrel button, 4 = second button)
+// Each configured button collects one or more ids, so a single press reported by several sources fires once.
 import { settings, saveSettings } from './settings.js'
 
 export const PEN_ACTIONS = [
-  { id: 'none', label: 'Nessuna azione' },
-  { id: 'hold-eraser', label: 'Gomma finché tieni premuto', hold: 'eraser' },
-  { id: 'hold-highlighter', label: 'Evidenziatore finché tieni premuto', hold: 'highlighter' },
-  { id: 'hold-lasso', label: 'Lazo finché tieni premuto', hold: 'lasso' },
-  { id: 'hold-snip', label: 'Snip finché tieni premuto', hold: 'snip' },
-  { id: 'toggle-eraser', label: 'Alterna penna / gomma' },
-  { id: 'toggle-lasso', label: 'Alterna penna / lazo' },
-  { id: 'undo', label: 'Annulla' },
-  { id: 'redo', label: 'Ripeti' },
-  { id: 'next-pen', label: 'Penna successiva della barra' },
-  { id: 'prev-pen', label: 'Penna precedente della barra' },
-  { id: 'toggle-penbar', label: 'Riduci / espandi la barra penne' },
+  { id: 'none', label: 'No action' },
+  { id: 'hold-eraser', label: 'Eraser while held', hold: 'eraser' },
+  { id: 'hold-highlighter', label: 'Highlighter while held', hold: 'highlighter' },
+  { id: 'hold-lasso', label: 'Lasso while held', hold: 'lasso' },
+  { id: 'hold-snip', label: 'Snip while held', hold: 'snip' },
+  { id: 'toggle-eraser', label: 'Toggle pen / eraser' },
+  { id: 'toggle-lasso', label: 'Toggle pen / lasso' },
+  { id: 'undo', label: 'Undo' },
+  { id: 'redo', label: 'Redo' },
+  { id: 'next-pen', label: 'Next pen in the bar' },
+  { id: 'prev-pen', label: 'Previous pen in the bar' },
+  { id: 'toggle-penbar', label: 'Collapse / expand the pen bar' },
 ]
 
 const WEB_BITS = [2, 4, 8, 16]
 const held = new Set()
-const pressed = new Set() // indici dei tasti configurati attualmente premuti
+const pressed = new Set() // indexes of the configured buttons currently pressed
 const listeners = new Set()
 let webBits = 0
 let learner = null
@@ -34,7 +34,7 @@ export function onPenButton(fn) {
   return () => listeners.delete(fn)
 }
 
-// Riceve ogni segnale grezzo (per la schermata "prova tasti").
+// Receives every raw signal (for the "test buttons" screen).
 export function onRawPenSignal(fn) {
   monitors.add(fn)
   return () => monitors.delete(fn)
@@ -54,7 +54,7 @@ function signal(id, down, device = '') {
   if (down) held.add(id)
   else {
     held.delete(id)
-    // un rilascio dal lato Android chiude anche gli eventuali segnali web rimasti appesi
+    // a release from the Android side also closes any web signals left hanging
     if (!id.startsWith('pbtn:')) {
       for (const x of [...held]) if (x.startsWith('pbtn:')) held.delete(x)
       webBits = 0
@@ -72,7 +72,7 @@ function signal(id, down, device = '') {
   })
 }
 
-// Bit dei pulsanti dai Pointer Events della penna (fallback quando Android non inoltra nulla).
+// Button bits from the pen's Pointer Events (fallback when Android forwards nothing).
 export function feedPointer(e) {
   if (e.pointerType !== 'pen') return
   let bits = 0
@@ -94,7 +94,7 @@ function finishLearn() {
   l?.resolve([...l.ids])
 }
 
-// Attende la pressione di un tasto (fino a timeoutMs) e restituisce gli id ricevuti.
+// Waits for a button press (up to timeoutMs) and returns the ids received.
 export function learnButton(timeoutMs = 10000) {
   releaseAll()
   if (learner) finishLearn()
@@ -119,7 +119,7 @@ export function setBinding(index, patch) {
   const b = settings.penButtons[index]
   if (!b) return
   Object.assign(b, patch)
-  // un id appartiene a un solo tasto
+  // an id belongs to one button only
   if (patch.ids) {
     settings.penButtons.forEach((o, i) => {
       if (i !== index) o.ids = o.ids.filter((x) => !patch.ids.includes(x))
@@ -136,6 +136,6 @@ export function initPenButtons() {
     if (typeof d.id === 'string') signal(d.id, !!d.down, typeof d.device === 'string' ? d.device : '')
   })
   window.addEventListener('blur', releaseAll)
-  // in cattura, così lo stato dei tasti è aggiornato prima che l'editor gestisca l'evento
+  // in the capture phase, so the button state is up to date before the editor handles the event
   for (const t of ['pointerdown', 'pointermove', 'pointerup']) document.addEventListener(t, feedPointer, true)
 }

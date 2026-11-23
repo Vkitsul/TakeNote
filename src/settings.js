@@ -1,7 +1,7 @@
 import * as db from './db.js'
 import { debounce } from './util.js'
 
-// Preferenze utente (strumenti, colori, comportamento penna). Salvate nello store "meta".
+// User preferences (tools, colors, pen behavior). Saved in the "meta" store.
 const DEFAULTS = {
   tool: 'pen',
   pen: {
@@ -21,21 +21,21 @@ const DEFAULTS = {
   eraser: { mode: 'stroke', size: 14, sizes: [8, 14, 28], highlighterOnly: false },
   snip: { mode: 'rect' },
   shapeHold: false,
-  nativeInk: true, // tratto in corso disegnato da un livello nativo Android (molto più reattivo del WebView)
-  predict: true, // la punta del tratto anticipa di qualche millisecondo il movimento della penna
-  palm: 'strong', // rifiuto del palmo: 'normal' | 'strong' | 'two' (si scorre solo con due dita)
+  nativeInk: true, // live stroke drawn by a native Android layer (much more responsive than the WebView)
+  predict: true, // the stroke tip runs a few milliseconds ahead of the pen
+  palm: 'strong', // palm rejection: 'normal' | 'strong' | 'two' (scroll with two fingers only)
   fingerDraw: false,
   twoFingerUndo: true,
-  pressure: 1, // esponente della curva di pressione (<1 = più sensibile)
+  pressure: 1, // pressure curve exponent (<1 = more sensitive)
   recentColors: [],
-  // Tasti della penna: ids = segnali riconosciuti (vedi penbuttons.js), action = cosa fanno
+  // Pen buttons: ids = recognized signals (see penbuttons.js), action = what they do
   penButtons: [
-    { name: 'Tasto 1', ids: ['key:92', 'btn:32', 'key:308', 'pbtn:2', 'btn:2'], action: 'toggle-eraser' },
-    { name: 'Tasto 2', ids: ['key:93', 'btn:64', 'key:309', 'pbtn:4', 'btn:4'], action: 'toggle-lasso' },
+    { name: 'Button 1', ids: ['key:92', 'btn:32', 'key:308', 'pbtn:2', 'btn:2'], action: 'toggle-eraser' },
+    { name: 'Button 2', ids: ['key:93', 'btn:64', 'key:309', 'pbtn:4', 'btn:4'], action: 'toggle-lasso' },
   ],
   penButtonsRev: 2,
   inkRev: 1,
-  // Barra penne flottante (come in Notein): penne preferite, posizione, ridotta/espansa
+  // Floating pen bar (as in Notein): favorite pens, position, collapsed/expanded
   penPresets: [
     { id: 'p1', type: 'plain', color: '#1f2a44', width: 1.6 },
     { id: 'p2', type: 'plain', color: '#e03131', width: 1.6 },
@@ -45,7 +45,7 @@ const DEFAULTS = {
   activePreset: 'p1',
   penBar: { show: true, collapsed: false, vertical: false, x: 0.5, y: 0.9 },
   dark: false,
-  // Backup automatico: target 'drive' = file scelto col selettore di Android (es. Google Drive), 'device' = Documenti
+  // Automatic backup: target 'drive' = file picked with the Android picker (e.g. Google Drive), 'device' = Documents
   autoBackup: { enabled: true, frequency: 'daily', target: 'device', uri: '', label: '', persistent: true, keep: 5, lastAt: 0, lastSig: '', lastError: '', bannerDismissed: false },
 }
 
@@ -60,8 +60,8 @@ function merge(target, src) {
   }
 }
 
-// Dalla versione 1.4: le penne Xiaomi inviano Pagina su/giù (92/93) e i tasti si usano con un clic
-// singolo (penna/gomma e penna/lazo), perché HyperOS reagisce quando un tasto resta premuto.
+// Since 1.4: Xiaomi pens send Page up/down (92/93) and the buttons are used with a single
+// click (pen/eraser and pen/lasso), because HyperOS reacts when a button is held.
 function migratePenButtons() {
   const [a, b] = settings.penButtons
   const taken = (id) => settings.penButtons.some((x) => x.ids.includes(id))
@@ -73,9 +73,9 @@ function migratePenButtons() {
   saveSettings()
 }
 
-// Dalla versione 1.5: scrittura come in Paint. Niente pressione e niente forme automatiche, che
-// trasformavano in linee dritte i tratti rallentati. Il tratto uniforme a parità di spessore
-// appare più grosso di quello a pressione, quindi gli spessori si riducono.
+// Since 1.5: writing works like Paint. No pressure and no automatic shapes, which
+// turned slow strokes into straight lines. At the same width the uniform stroke looks
+// thicker than the pressure one, so the widths are reduced.
 function migrateInk() {
   const round1 = (v) => Math.max(0.4, Math.round(v * 7.5) / 10)
   settings.shapeHold = false
@@ -101,9 +101,11 @@ export async function loadSettings() {
       merge(settings, rec.value)
       if (!rec.value.penButtonsRev) migratePenButtons()
       if (!rec.value.inkRev) migrateInk()
+      // since 1.7 the interface is in English: rename the buttons saved with their old names
+      settings.penButtons.forEach((b, i) => { if (/^Tasto \d$/.test(b.name)) b.name = 'Button ' + (i + 1) })
     }
   } catch (e) {
-    console.warn('Impostazioni non caricate', e)
+    console.warn('Settings not loaded', e)
   }
 }
 

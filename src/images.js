@@ -1,4 +1,4 @@
-// Cache delle immagini (snip) caricate dallo store "files".
+// Cache of images (snips) loaded from the "files" store.
 import * as db from './db.js'
 import { uid } from './util.js'
 
@@ -22,13 +22,13 @@ async function load(id) {
     for (const fn of listeners) fn(id)
     return bmp
   } catch (e) {
-    console.warn('Immagine non caricata', id, e)
+    console.warn('Image not loaded', id, e)
     cache.set(id, 'missing')
     return null
   }
 }
 
-// Restituisce subito la bitmap se pronta, altrimenti avvia il caricamento e restituisce null.
+// Returns the bitmap right away if ready, otherwise starts loading it and returns null.
 export function getImage(id) {
   const v = cache.get(id)
   if (v === undefined) {
@@ -48,14 +48,14 @@ export async function ensureImage(id) {
   return p
 }
 
-// Salva un blob immagine come file e lo mette in cache.
+// Saves an image blob as a file and caches it.
 export async function storeImageBlob(blob) {
   const id = uid()
   await db.put('files', { id, blob, type: blob.type, createdAt: Date.now() })
   try {
     cache.set(id, await createImageBitmap(blob))
   } catch {
-    /* verrà caricata alla prima richiesta */
+    /* loaded on first request */
   }
   return id
 }

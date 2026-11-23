@@ -1,4 +1,4 @@
-// Riconoscimento forme: "tieni premuto" a fine tratto per trasformarlo in linea, cerchio/ellisse, rettangolo o triangolo.
+// Shape recognition: "hold" at the end of a stroke to turn it into a line, circle/ellipse, rectangle or triangle.
 
 function rdp(P, eps, a = 0, b = P.length - 1, out = []) {
   let maxD = -1
@@ -47,7 +47,7 @@ function removeCollinear(poly, minAngleDeg) {
   return pts
 }
 
-// pts: array piatto [x,y,p,...]. Ritorna { kind, poly: [[x,y]...], closed } o null.
+// pts: flat array [x,y,p,...]. Returns { kind, poly: [[x,y]...], closed } or null.
 export function recognizeShape(flat) {
   const P = []
   for (let i = 0; i < flat.length; i += 3) P.push([flat[i], flat[i + 1]])
@@ -74,7 +74,7 @@ export function recognizeShape(flat) {
 
   if (simp.length === 3) return { kind: 'triangle', poly: simp, closed: true }
   if (simp.length === 4) {
-    // rettangolo quasi allineato agli assi?
+    // a rectangle almost aligned with the axes?
     let aligned = true
     for (let i = 0; i < 4; i++) {
       const a = simp[i], b = simp[(i + 1) % 4]
@@ -85,7 +85,7 @@ export function recognizeShape(flat) {
     if (aligned) return { kind: 'rect', poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], closed: true }
     return { kind: 'quad', poly: simp, closed: true }
   }
-  // ellisse inscritta nel riquadro
+  // ellipse inscribed in the box
   const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2
   let rx = (x1 - x0) / 2, ry = (y1 - y0) / 2
   if (Math.abs(rx - ry) / Math.max(rx, ry) < 0.12) rx = ry = (rx + ry) / 2
@@ -98,7 +98,7 @@ export function recognizeShape(flat) {
   return { kind: 'ellipse', poly, closed: true }
 }
 
-// Converte un poligono in punti di tratto con pressione costante.
+// Converts a polygon into stroke points with constant pressure.
 export function shapeToPoints(poly, closed, step = 3) {
   const out = []
   const pts = closed ? [...poly, poly[0]] : poly

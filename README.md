@@ -1,93 +1,93 @@
 # TakeNote
 
-App per prendere appunti **solo con la penna** su tablet Android (pensata per Xiaomi Pad 7 + Focus Pen).
-Niente caselle di testo: penne, evidenziatore, gomma, lazo, snip, PDF annotabili e pagine illimitate.
+A note-taking app for Android tablets that is **pen only** (built for the Xiaomi Pad 7 + Focus Pen).
+No text boxes: pens, highlighter, eraser, lasso, snips, annotatable PDFs and unlimited pages.
 
-## Installazione sul tablet
+## Installing on the tablet
 
-1. Compila `TakeNote.apk` (vedi *Per sviluppatori*: l'APK non è nel repository) e copialo sul tablet (cavo USB, Google Drive, Telegram a te stesso…).
-2. Aprilo dal file manager del tablet e tocca **Installa**.
-   La prima volta Android chiede di consentire l'installazione da quella sorgente (Impostazioni → *Installa app sconosciute*): consentila solo per l'app con cui apri il file.
-3. Apri **TakeNote** dalla home.
+1. Build `TakeNote.apk` (see *For developers*: the APK is not in the repository) and copy it to the tablet (USB cable, Google Drive, a Telegram message to yourself…).
+2. Open it from the tablet's file manager and tap **Install**.
+   The first time, Android asks you to allow installs from that source (Settings → *Install unknown apps*): allow it only for the app you open the file with.
+3. Open **TakeNote** from the home screen.
 
-Per aggiornare l'app in futuro basta installare il nuovo `TakeNote.apk` sopra quello vecchio: i quaderni restano.
-Questo funziona solo se l'APK è firmato con la stessa chiave → **non cancellare la cartella `android-signing`** (vedi il LEGGIMI al suo interno). Contiene la chiave privata, quindi resta solo sul tuo PC e non è nel repository.
+To update the app later, install the new `TakeNote.apk` over the old one: your notebooks stay.
+This works only if the APK is signed with the same key → **do not delete the `android-signing` folder** (see the notes inside it). It holds the private key, so it stays on your PC and is not in the repository.
 
-## Cosa c'è
+## Features
 
-**Libreria**
-- Cartelle (es. una per materia), quaderni con copertina in anteprima.
-- Nuovo quaderno: sfondo (bianco, righe, righe strette, quadretti 5 mm, quadretti 4 mm, millimetrata, puntini), A4 verticale/orizzontale, colore carta.
-- Importa PDF → diventa un quaderno su cui scrivere.
-- Menu del quaderno: rinomina, sposta, colore copertina, esporta PDF, backup, elimina.
+**Library**
+- Folders (e.g. one per subject) and notebooks with a cover preview.
+- New notebook: background (blank, lined, narrow lines, 5 mm grid, 4 mm grid, graph paper, dotted), A4 portrait/landscape, paper color.
+- Import PDF → it becomes a notebook you can write on.
+- Notebook menu: rename, move, cover color, export PDF, backup, delete.
 
 **Editor**
-- **Tratto uniforme** (predefinito): spessore costante, nessuna pressione, come scrivere col mouse in Paint; la linea segue i campioni della penna con curve morbide, senza spigoli e senza ritardo.
-  La punta del tratto anticipa di qualche millisecondo il movimento della penna (*Previsione del tratto*, disattivabile).
-  Il tratto in corso è disegnato da un livello nativo Android, molto più reattivo del WebView (si disattiva in *Impostazioni penna e tasti → Scrittura veloce*, in caso di problemi).
-  Restano disponibili anche stilografica, sfera, pennello e matita, sensibili alla pressione ma senza scrittura veloce.
-  Tocca di nuovo l'icona della penna attiva per cambiare tipo e spessore.
-- 5 colori rapidi per penna ed evidenziatore: tocca un colore già attivo per cambiarlo (tavolozza + selettore libero).
-- 3 spessori rapidi: tocca quello attivo per regolarlo.
-- Evidenziatore trasparente (non copre il testo), opzione "sempre linea dritta".
-- Forme automatiche (tieni premuto a fine tratto → linea, cerchio, rettangolo, triangolo): **disattivate di base**, perché scrivendo lentamente trasformavano i tratti in linee dritte. Si riattivano in *Impostazioni penna e tasti*.
-- Gomma: *Tratto* (cancella tratti interi) o *Parziale*; opzione "solo evidenziatore"; "Cancella pagina".
-- **Barra penne flottante** (come in Notein): solo le tue penne preferite (stilografica, sfera, pennello, matita, evidenziatore, ognuna col suo colore e spessore).
-  - Tocca una penna per usarla; tocca di nuovo quella attiva per cambiarne tipo, spessore, colore o rimuoverla. **+** ne aggiunge una.
-  - Trascinala dalla maniglia (i puntini) dove vuoi; menu ⋯ per renderla verticale, riordinare le penne o nasconderla.
-  - Il pulsante con le frecce la **riduce a icona**; tocca l'icona per **espanderla** (trascina l'icona per spostarla).
-  - Se cambi colore/spessore dalla barra in alto mentre usi una penna della barra, la penna si aggiorna.
-  - Menu ⋮ dell'editor → *Mostra/Nascondi barra penne*.
-- **Tasti della penna configurabili** (menu ⋮ → *Impostazioni penna e tasti*): per *Tasto 1* e *Tasto 2* scegli l'azione
-  (gomma/evidenziatore/lazo/snip finché tieni premuto, alterna penna-gomma o penna-lazo, annulla, ripeti, penna successiva/precedente della barra, riduci/espandi barra).
-  Predefiniti: **Tasto 1 = alterna penna/gomma**, **Tasto 2 = alterna penna/lazo**, con un clic singolo.
-  Premi **Rileva** e poi il tasto sulla penna per insegnare all'app quale segnale invia. In basso, *Segnali ricevuti* mostra il codice di ogni pressione e il dispositivo che l'ha inviata.
-  Dai un tocco breve: se tieni premuto un tasto Xiaomi, HyperOS può avviare lo screenshot o la nota rapida. Se *Segnali ricevuti* resta vuoto, il sistema non sta passando il tasto all'app.
-- L'app resta sempre in **orizzontale** (puoi girare il tablet di 180°).
-- **Modalità scura** (icona luna/sole in alto, anche nella libreria): pagine, carta, righe, PDF e snip vengono invertiti;
-  dell'inchiostro cambia solo il **nero** (e i grigi/blu quasi neri), che appare bianco. Rosso, blu, verde, evidenziatori… restano uguali.
-  È solo visualizzazione: togliendo la modalità scura il nero torna nero, e i PDF esportati hanno sempre i colori originali.
-- Lazo: cerchia o tocca un tratto/snip → sposta (anche su un'altra pagina, scorrendo con un dito mentre trascini), ridimensiona dagli angoli, cambia colore, copia/taglia/incolla, duplica, elimina, salva come snip.
-- **Snip**: ritaglio rettangolare o a forma libera di qualunque parte di pagina o PDF.
-  Lo snip appare subito "sollevato": trascinalo dove vuoi. Resta anche nel vassoio **Snip salvati** (icona immagini in alto a destra), da cui puoi trascinarlo o toccarlo per inserirlo in qualsiasi pagina di qualsiasi quaderno.
-- Pagine: pulsante "+ Nuova pagina" in fondo, pannello Pagine (miniature) con inserisci dopo, duplica, sposta, elimina, sfondo, inserisci PDF in mezzo al quaderno.
-- Esporta PDF: pagine PDF originali (testo ancora selezionabile) + inchiostro vettoriale + snip. Condividi (Drive, email…) o salva in *Documenti/TakeNote*.
-- Salvataggio automatico continuo.
+- **Uniform stroke** (default): constant width, no pressure, like drawing with the mouse in Paint. The line follows the pen samples with smooth curves, without corners or lag.
+  The stroke tip runs a few milliseconds ahead of the pen (*Stroke prediction*, can be turned off).
+  The stroke in progress is drawn by a native Android layer, much more responsive than the WebView (turn it off in *Pen and touch settings → Fast writing* if it causes problems).
+  Fountain pen, ballpoint, brush and pencil are still available: they react to pressure but do not use fast writing.
+  Tap the active pen icon again to change its type and width.
+- 5 quick colors for pen and highlighter: tap an active color to change it (palette + free picker).
+- 3 quick widths: tap the active one to adjust it.
+- Transparent highlighter (does not cover the text), with an "always a straight line" option.
+- Automatic shapes (hold at the end of a stroke → line, circle, rectangle, triangle): **off by default**, because when writing slowly they turned strokes into straight lines. Turn them back on in *Pen and touch settings*.
+- Eraser: *Whole stroke* or *Partial*; "erase highlighter only" option; "Erase current page".
+- **Floating pen bar** (as in Notein): only your favorite pens, each with its own color and width.
+  - Tap a pen to use it; tap the active one again to change its type, width or color, or remove it. **+** adds a pen.
+  - Drag it by the handle (the dots) wherever you like; the ⋯ menu makes it vertical, reorders the pens or hides it.
+  - The arrows button **collapses it to an icon**; tap the icon to **expand it** (drag the icon to move it).
+  - If you change color or width from the top bar while using a pen from the bar, that pen is updated.
+  - Editor ⋮ menu → *Show/Hide pen bar*.
+- **Configurable pen buttons** (⋮ menu → *Pen and touch settings*): for *Button 1* and *Button 2* choose the action
+  (eraser/highlighter/lasso/snip while held, toggle pen-eraser or pen-lasso, undo, redo, next/previous pen in the bar, collapse/expand the bar).
+  Defaults: **Button 1 = toggle pen/eraser**, **Button 2 = toggle pen/lasso**, with a single click.
+  Tap **Detect** and then the button on the pen to teach the app which signal it sends. Below, *Signals received* shows the code of every press and the device that sent it.
+  Give the button a short tap: if you hold a Xiaomi button, HyperOS may start a screenshot or a quick note. If *Signals received* stays empty, the system is not passing the button to the app.
+- The app always stays in **landscape** (you can turn the tablet by 180°).
+- **Dark mode** (moon/sun icon at the top, in the library too): pages, paper, lines, PDFs and snips are inverted;
+  of the ink only **black** changes (and near-black grays and blues), which shows as white. Red, blue, green, highlighters… stay the same.
+  It only affects what you see: turning dark mode off brings black back, and exported PDFs always keep the original colors.
+- Lasso: circle or tap a stroke/snip → move (even to another page, scrolling with a finger while you drag), resize from the corners, recolor, copy/cut/paste, duplicate, delete, save as snip.
+- **Snip**: rectangular or freeform clipping of any part of a page or PDF.
+  The snip shows up "lifted" right away: drag it wherever you want. It also stays in the **Saved snips** tray (images icon at the top right), from which you can drag it, or tap it, to insert it on any page of any notebook.
+- Pages: "+ New page" button at the bottom, Pages panel (thumbnails) with insert after, duplicate, move, delete, background, insert a PDF in the middle of the notebook.
+- Export PDF: original PDF pages (text still selectable) + vector ink + snips. Share it (Drive, email…) or save it to *Documents/TakeNote*.
+- Continuous autosave.
 
-**Gesti**
-- 1 dito: scorri · 2 dita: zoom · doppio tocco: adatta alla larghezza
-- Tocco con 2 dita: annulla · tocco con 3 dita: ripeti
-- **Rifiuto del palmo** (Impostazioni penna e tasti), filtrato a livello Android prima che il tocco arrivi all'app:
-  - *Forte* (predefinito): la mano è ignorata mentre la penna scrive o è sospesa sullo schermo, per 0,7 s dopo, e per 2,5 s entro 9 cm da dove hai scritto; anche i contatti larghi come un palmo. Un dito lontano dalla penna scorre subito.
-  - *Due dita*: in più un dito solo non scorre mai la pagina (scorri e ingrandisci con due dita).
-  - *Normale*: solo mentre la penna scrive e subito dopo.
-  - Se la mano ha fatto scorrere la pagina di poco prima che la penna toccasse, la pagina torna dov'era.
-- Impostazioni penna (menu ⋮): sensibilità pressione, disegno col dito, gesti, tasto penna.
+**Gestures**
+- 1 finger: scroll · 2 fingers: zoom · double tap: fit to width
+- 2-finger tap: undo · 3-finger tap: redo
+- **Palm rejection** (Pen and touch settings), filtered at the Android level before the touch reaches the app:
+  - *Strong* (default): the hand is ignored while the pen writes or hovers over the screen, for 0.7 s afterwards, and for 2.5 s within 9 cm of where you wrote; contacts as wide as a palm are ignored too. A finger far from the pen scrolls right away.
+  - *Two fingers*: on top of that, one finger never scrolls the page (scroll and zoom with two fingers).
+  - *Normal*: only while the pen writes and right after.
+  - If the hand scrolled the page a little before the pen touched, the page goes back where it was.
+- Pen settings (⋮ menu): pressure sensitivity, finger drawing, gestures, pen buttons.
 
-## Backup (importante)
+## Backup (important)
 
-I quaderni sono salvati **solo sul tablet**, dentro l'app. Se disinstalli l'app vengono cancellati: per questo c'è il **backup automatico**.
+Notebooks are saved **only on the tablet**, inside the app. Uninstalling the app deletes them: that is why there is an **automatic backup**.
 
-**Backup automatico** (libreria → menu ⋮ → *Backup automatico…*, oppure tocca il banner blu):
-- È attivo da subito nella memoria del tablet (*Documenti/TakeNote/Backup*, ultime 5 copie).
-- **Per Google Drive**: scegli *Google Drive* → *Scegli su Drive…*. Nel selettore file tocca ☰, poi **Drive**, scegli una cartella e premi **Salva**.
-  Da quel momento l'app aggiorna da sola quel file a ogni backup (serve l'app Google Drive installata sul tablet; se sei offline, Drive lo carica appena torni online).
-- Frequenza: *ogni giorno* (consigliato), *a ogni chiusura di un quaderno*, *ogni settimana*. Il backup parte solo se hai cambiato qualcosa.
-- In alto nella libreria compare "Backup…" mentre lavora e "Backup non riuscito" se c'è un problema (toccalo per i dettagli).
+**Automatic backup** (library → ⋮ menu → *Automatic backup…*, or tap the blue banner):
+- It is on from the start, in the tablet storage (*Documents/TakeNote/Backup*, latest 5 copies).
+- **For Google Drive**: choose *Google Drive* → *Choose on Drive…*. In the file picker tap ☰, then **Drive**, pick a folder and tap **Save**.
+  From then on the app updates that file by itself on every backup (the Google Drive app must be installed on the tablet; if you are offline, Drive uploads it as soon as you are back online).
+- Frequency: *every day* (recommended), *each time a notebook closes*, *every week*. A backup runs only if you changed something.
+- At the top of the library, "Backup…" shows while it runs and "Backup failed" if something goes wrong (tap it for details).
 
-**Ripristino**: libreria → menu ⋮ → **Ripristina da backup…** e scegli il file `.takenote` (anche direttamente da Drive).
-**Backup completo ora** crea un file da condividere dove vuoi.
+**Restore**: library → ⋮ menu → **Restore from backup…** and pick the `.takenote` file (straight from Drive works too).
+**Full backup now** creates a file you can share anywhere.
 
-## Per sviluppatori
+## For developers
 
-Requisiti: Node.js 22, JDK 21, Android SDK (platform 36, build-tools 36).
+Requirements: Node.js 22, JDK 21, Android SDK (platform 36, build-tools 36).
 
-- `npm install` installa le dipendenze e copia in `public/pdfjs` i file di pdf.js che servono offline.
-- Web app: Vite + JavaScript (cartella `src/`). `npm run dev` per provarla nel browser (il mouse fa da penna).
-- Android: Capacitor 8 (cartella `android/`), con due parti native in `android/app/src/main/java`:
-  il livello che disegna il tratto in corso (`InkOverlayView`) e la destinazione del backup su Drive (`BackupTargetPlugin`).
-  Ricompila l'APK con `npm run android`
-  (lo script cerca JDK 21 e Android SDK in `%LOCALAPPDATA%\TakeNoteBuild`).
-- Firma: l'APK di release si firma con `android-signing/takenote-release.jks` e i dati in `android/keystore.properties`
-  (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`). Sono esclusi da git: per compilare da un'altra copia del progetto
-  crea una chiave tua con `keytool -genkeypair`. Senza la chiave originale l'app non si aggiorna sopra quella già installata.
+- `npm install` installs the dependencies and copies the pdf.js files needed offline into `public/pdfjs`.
+- Web app: Vite + JavaScript (`src/` folder). `npm run dev` runs it in the browser (the mouse acts as the pen).
+- Android: Capacitor 8 (`android/` folder), with native parts in `android/app/src/main/java`:
+  the router that separates pen and hand (`InputRouter`), the layer that draws the stroke in progress (`InkOverlayView`) and the Drive backup destination (`BackupTargetPlugin`).
+  Rebuild the APK with `npm run android`
+  (the script looks for JDK 21 and the Android SDK in `%LOCALAPPDATA%\TakeNoteBuild`).
+- Signing: the release APK is signed with `android-signing/takenote-release.jks` and the values in `android/keystore.properties`
+  (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`). Both are excluded from git: to build from another copy of the project,
+  create your own key with `keytool -genkeypair`. Without the original key the app cannot update over the one already installed.

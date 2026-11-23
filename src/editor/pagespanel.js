@@ -1,4 +1,4 @@
-// Pannello laterale con le miniature delle pagine: vai a, aggiungi, duplica, sposta, elimina, sfondo.
+// Side panel with page thumbnails: go to, add, duplicate, move, delete, background.
 import { h } from '../util.js'
 import { icon } from '../icons.js'
 import { menu, confirmDialog } from '../ui.js'
@@ -17,14 +17,14 @@ export class PagesPanel {
       h(
         'div',
         { class: 'panel-head' },
-        h('h3', null, 'Pagine'),
-        h('button', { class: 'icon-btn', title: 'Chiudi', onclick: () => this.close() }, icon('close'))
+        h('h3', null, 'Pages'),
+        h('button', { class: 'icon-btn', title: 'Close', onclick: () => this.close() }, icon('close'))
       ),
       this.list,
       h(
         'div',
         { class: 'panel-foot' },
-        h('button', { class: 'btn primary', onclick: () => this.ed.addPageAfter(this.ed.currentIndex()) }, icon('plus', 18), 'Pagina'),
+        h('button', { class: 'btn primary', onclick: () => this.ed.addPageAfter(this.ed.currentIndex()) }, icon('plus', 18), 'Page'),
         h('button', { class: 'btn', onclick: () => this.ed.insertPdf(this.ed.currentIndex()) }, icon('file', 18), 'PDF')
       )
     )
@@ -68,7 +68,7 @@ export class PagesPanel {
           'div',
           { class: 'pg-meta' },
           h('span', { class: 'pg-num' }, i + 1),
-          h('button', { class: 'icon-btn small', title: 'Opzioni pagina', onclick: (e) => { e.stopPropagation(); this.pageMenu(i, e.currentTarget) } }, icon('more', 18))
+          h('button', { class: 'icon-btn small', title: 'Page options', onclick: (e) => { e.stopPropagation(); this.pageMenu(i, e.currentTarget) } }, icon('more', 18))
         )
       )
       item.addEventListener('click', () => this.ed.view.scrollToPage(i))
@@ -102,21 +102,21 @@ export class PagesPanel {
     const ed = this.ed
     const n = ed.doc.pages.length
     menu(anchor, [
-      { label: 'Nuova pagina dopo', icon: 'plus', onClick: () => ed.addPageAfter(i, { scroll: false }) },
-      { label: 'Duplica pagina', icon: 'duplicate', onClick: () => ed.duplicatePage(i) },
-      { label: 'Inserisci PDF dopo', icon: 'file', onClick: () => ed.insertPdf(i) },
-      { label: 'Sfondo…', icon: 'pages', onClick: () => ed.openBackgroundDialog(i) },
+      { label: 'New page after', icon: 'plus', onClick: () => ed.addPageAfter(i, { scroll: false }) },
+      { label: 'Duplicate page', icon: 'duplicate', onClick: () => ed.duplicatePage(i) },
+      { label: 'Insert PDF after', icon: 'file', onClick: () => ed.insertPdf(i) },
+      { label: 'Background…', icon: 'pages', onClick: () => ed.openBackgroundDialog(i) },
       '-',
-      { label: 'Sposta su', icon: 'up', disabled: i === 0, onClick: () => ed.movePage(i, i - 1) },
-      { label: 'Sposta giù', icon: 'down', disabled: i === n - 1, onClick: () => ed.movePage(i, i + 1) },
+      { label: 'Move up', icon: 'up', disabled: i === 0, onClick: () => ed.movePage(i, i - 1) },
+      { label: 'Move down', icon: 'down', disabled: i === n - 1, onClick: () => ed.movePage(i, i + 1) },
       '-',
       {
-        label: 'Elimina pagina',
+        label: 'Delete page',
         icon: 'trash',
         danger: true,
         disabled: n <= 1,
         onClick: async () => {
-          if (await confirmDialog(`Eliminare la pagina ${i + 1}?`, { okLabel: 'Elimina', danger: true })) ed.deletePage(i)
+          if (await confirmDialog(`Delete page ${i + 1}?`, { okLabel: 'Delete', danger: true })) ed.deletePage(i)
         },
       },
     ])

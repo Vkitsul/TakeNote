@@ -1,4 +1,4 @@
-// Piccole utility condivise.
+// Small shared utilities.
 
 export function uid() {
   if (globalThis.crypto?.randomUUID) return crypto.randomUUID().replace(/-/g, '').slice(0, 20)
@@ -21,7 +21,7 @@ export function debounce(fn, ms) {
   return d
 }
 
-// Crea elementi DOM: h('div', { class: 'x', onclick }, 'testo', figlio)
+// Creates DOM elements: h('div', { class: 'x', onclick }, 'text', child)
 export function h(tag, props, ...children) {
   const el = document.createElement(tag)
   if (props) {
@@ -48,7 +48,7 @@ export function h(tag, props, ...children) {
   return el
 }
 
-// --- Geometria ---
+// --- Geometry ---
 
 export function distSqToSegment(px, py, ax, ay, bx, by) {
   const dx = bx - ax
@@ -61,7 +61,7 @@ export function distSqToSegment(px, py, ax, ay, bx, by) {
   return x * x + y * y
 }
 
-// poly: array piatto [x0,y0,x1,y1,...]
+// poly: flat array [x0,y0,x1,y1,...]
 export function pointInPolygon(x, y, poly) {
   let inside = false
   for (let i = 0, j = poly.length - 2; i < poly.length; j = i, i += 2) {
@@ -117,8 +117,8 @@ export function formatDate(ts) {
   const d = new Date(ts)
   const now = new Date()
   const sameDay = d.toDateString() === now.toDateString()
-  if (sameDay) return 'Oggi, ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-  return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' })
+  if (sameDay) return 'Today, ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' })
 }
 
 export function blobToBase64(blob) {

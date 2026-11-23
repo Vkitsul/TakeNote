@@ -1,4 +1,4 @@
-// Modello di un quaderno aperto: pagine in ordine, elementi, salvataggio automatico.
+// Model of an open notebook: ordered pages, items, autosave.
 import * as db from './db.js'
 import { uid, debounce } from './util.js'
 
@@ -14,11 +14,11 @@ export function newNotebook({ title, folderId = null, tpl = 'lined', paper = '#f
 export class NotebookDoc {
   static async load(id) {
     const nb = await db.get('notebooks', id)
-    if (!nb) throw new Error('Quaderno non trovato')
+    if (!nb) throw new Error('Notebook not found')
     const list = await db.byIndex('pages', 'notebookId', id)
     const map = new Map(list.map((p) => [p.id, p]))
     const order = nb.pageIds.map((pid) => map.get(pid)).filter(Boolean)
-    // pagine orfane (non dovrebbe succedere): le accodiamo
+    // orphan pages (should not happen): append them
     for (const p of list) if (!nb.pageIds.includes(p.id)) order.push(p)
     for (const p of order) p.version = p.version || 0
     return new NotebookDoc(nb, order)
@@ -82,7 +82,7 @@ export class NotebookDoc {
     this.emit('pages', { type: 'bg', pageId })
   }
 
-  // Sostituisce l'ordine delle pagine (usato per inserimenti, eliminazioni, spostamenti e annulla).
+  // Replaces the page order (used for inserts, deletes, moves and undo).
   setPages(pages) {
     const before = new Set(this.pages.map((p) => p.id))
     const after = new Set(pages.map((p) => p.id))
@@ -128,7 +128,7 @@ export class NotebookDoc {
     try {
       await db.batch(ops)
     } catch (e) {
-      console.error('Salvataggio fallito', e)
+      console.error('Save failed', e)
       throw e
     }
   }

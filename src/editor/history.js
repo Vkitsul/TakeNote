@@ -1,5 +1,5 @@
-// Annulla / ripeti.
-// Voci: { kind: 'items', changes: [{ pageId, before, after }] } | { kind: 'pages', before: Page[], after: Page[] }
+// Undo / redo.
+// Entries: { kind: 'items', changes: [{ pageId, before, after }] } | { kind: 'pages', before: Page[], after: Page[] }
 const LIMIT = 300
 
 export class History {
@@ -21,7 +21,7 @@ export class History {
     this.onChange?.()
   }
 
-  // Registra una modifica di elementi su una pagina e la applica.
+  // Records a change to the items of a page and applies it.
   commitItems(pageId, before, after, change) {
     this.doc.setItems(pageId, after, change)
     this.push({ kind: 'items', changes: [{ pageId, before, after }] })

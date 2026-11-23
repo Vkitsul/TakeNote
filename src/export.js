@@ -1,4 +1,4 @@
-// Esporta un quaderno in PDF: pagine PDF originali (testo selezionabile) + inchiostro vettoriale + snip.
+// Exports a notebook to PDF: original PDF pages (selectable text) + vector ink + snips.
 import { PDFDocument, rgb, BlendMode, LineCapStyle, LineJoinStyle, setLineJoin, pushGraphicsState, popGraphicsState, concatTransformationMatrix } from 'pdf-lib'
 import { strokeOutline, outlineToSvg, polylineSvg, PEN_TYPES } from './ink.js'
 import { templateGeometry } from './templates.js'
@@ -16,7 +16,7 @@ function invert([a, b, c, d, e, f]) {
   return [d / det, -b / det, -c / det, a / det, (c * f - d * e) / det, (b * e - a * f) / det]
 }
 
-// Avvolge il contenuto originale della pagina in q/Q così il nostro disegno parte da uno stato pulito.
+// Wraps the page's original content in q/Q so our drawing starts from a clean state.
 function isolateContent(out, page) {
   const { Contents } = page.node.normalizedEntries()
   if (!Contents || !Contents.size()) return
@@ -28,7 +28,7 @@ function isolateContent(out, page) {
 
 export async function exportPdf(doc, onProgress) {
   const out = await PDFDocument.create()
-  out.setTitle(doc.nb.title || 'Quaderno')
+  out.setTitle(doc.nb.title || 'Notebook')
   out.setCreator('TakeNote')
   const sources = new Map() // fileId -> PDFDocument | null
   const images = new Map() // fileId -> PDFImage
@@ -40,7 +40,7 @@ export async function exportPdf(doc, onProgress) {
       const blob = await getFileBlob(fileId)
       src = await PDFDocument.load(await blob.arrayBuffer(), { ignoreEncryption: true, updateMetadata: false })
     } catch (e) {
-      console.warn('PDF sorgente non copiabile, uso immagine', e)
+      console.warn('Source PDF cannot be copied, using an image', e)
     }
     sources.set(fileId, src)
     return src
@@ -54,7 +54,7 @@ export async function exportPdf(doc, onProgress) {
       const bytes = new Uint8Array(await blob.arrayBuffer())
       img = blob.type === 'image/jpeg' ? await out.embedJpg(bytes) : await out.embedPng(bytes)
     } catch (e) {
-      console.warn('Immagine non incorporata', e)
+      console.warn('Image not embedded', e)
     }
     images.set(fileId, img)
     return img
@@ -64,7 +64,7 @@ export async function exportPdf(doc, onProgress) {
   for (let n = 0; n < total; n++) {
     const p = doc.pages[n]
     let page
-    // C: matrice da "coordinate SVG" (y verso il basso, unità pagina) allo spazio PDF della pagina
+    // C: matrix from "SVG coordinates" (y down, page units) to the page's PDF space
     let C
     if (p.pdf) {
       const src = await source(p.pdf.f)
@@ -75,7 +75,7 @@ export async function exportPdf(doc, onProgress) {
         const M = invert(p.pdf.t)
         C = [M[0], M[1], -M[2], -M[3], M[4], M[5]]
       } else {
-        // ripiego: rasterizza la pagina
+        // fallback: rasterize the page
         page = out.addPage([p.w, p.h])
         const job = renderPdfRegion(p.pdf, 2.5, { x: 0, y: 0, w: p.w, h: p.h }, 0)
         const canvas = await job.promise
@@ -95,7 +95,7 @@ export async function exportPdf(doc, onProgress) {
 
     page.pushOperators(pushGraphicsState(), concatTransformationMatrix(...C), setLineJoin(LineJoinStyle.Round))
 
-    // sfondo a righe/quadretti/puntini
+    // lined/grid/dotted background
     if (p.tpl && p.tpl !== 'blank') {
       const g = templateGeometry(p.tpl, p.w, p.h)
       const [r, gg, b] = g.rgb

@@ -17,7 +17,7 @@ import com.getcapacitor.BridgeActivity;
 import org.json.JSONObject;
 
 public class MainActivity extends BridgeActivity {
-    // Pulsanti che una penna può segnalare nello stato del MotionEvent
+    // Buttons a pen can report in the MotionEvent button state
     private static final int[] PEN_BUTTONS = {
         MotionEvent.BUTTON_STYLUS_PRIMARY,
         MotionEvent.BUTTON_STYLUS_SECONDARY,
@@ -35,7 +35,7 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
         WebView webView = getBridge().getWebView();
-        // niente rimbalzo/scrollbar del WebView: pan e zoom li gestisce l'app
+        // no WebView overscroll/scrollbars: the app handles pan and zoom
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         webView.setVerticalScrollBarEnabled(false);
         webView.setHorizontalScrollBarEnabled(false);
@@ -44,11 +44,11 @@ public class MainActivity extends BridgeActivity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setTextZoom(100);
-        // il motore del WebView non va mai rallentato dal sistema mentre l'app è in primo piano
+        // the system must never throttle the WebView engine while the app is in the foreground
         if (Build.VERSION.SDK_INT >= 26) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
         if (Build.VERSION.SDK_INT >= 35) webView.setRequestedFrameRate(View.REQUESTED_FRAME_RATE_CATEGORY_HIGH);
         requestHighestRefreshRate();
-        // livello del tratto in corso, sopra il WebView (vedi InkOverlayView)
+        // live stroke layer, on top of the WebView (see InkOverlayView)
         inkOverlay = new InkOverlayView(this, webView);
         ((ViewGroup) webView.getParent()).addView(
             inkOverlay,
@@ -65,7 +65,7 @@ public class MainActivity extends BridgeActivity {
         return router;
     }
 
-    // Ogni fotogramma in meno è ritardo in meno tra penna e inchiostro (Pad 7: fino a 144 Hz).
+    // Every frame saved is less lag between pen and ink (Pad 7: up to 144 Hz).
     private void requestHighestRefreshRate() {
         Display display = getWindowManager().getDefaultDisplay();
         Display.Mode current = display.getMode();
@@ -83,7 +83,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         trackPenButtons(ev);
-        // penna al livello del tratto, dita filtrate dal rifiuto del palmo (vedi InputRouter)
+        // pen to the stroke layer, fingers filtered by palm rejection (see InputRouter)
         if (router != null) return router.dispatch(ev);
         return super.dispatchTouchEvent(ev);
     }
@@ -95,7 +95,7 @@ public class MainActivity extends BridgeActivity {
         return super.dispatchGenericMotionEvent(ev);
     }
 
-    // Inoltra all'app web ogni pressione/rilascio dei tasti della penna (anche mentre la penna è sospesa sullo schermo).
+    // Forwards every pen button press/release to the web app (even while the pen hovers over the screen).
     private void trackPenButtons(MotionEvent ev) {
         int tool = ev.getToolType(0);
         if (tool != MotionEvent.TOOL_TYPE_STYLUS && tool != MotionEvent.TOOL_TYPE_ERASER) return;
@@ -111,8 +111,8 @@ public class MainActivity extends BridgeActivity {
         penButtonState = state;
     }
 
-    // Le penne Xiaomi mandano i tasti da una "tastiera" Bluetooth della penna come Pagina su/giù (92/93),
-    // non con origine stilo: quindi si inoltra ogni tasto fisico, e l'app decide quali usare.
+    // Xiaomi pens send their buttons from the pen's Bluetooth "keyboard" as Page up/down (92/93),
+    // not with a stylus source: so every physical key is forwarded, and the app decides which to use.
     @Override
     public boolean dispatchKeyEvent(KeyEvent ev) {
         int code = ev.getKeyCode();
@@ -156,7 +156,7 @@ public class MainActivity extends BridgeActivity {
         if (getBridge() == null) return;
         final WebView webView = getBridge().getWebView();
         if (webView == null) return;
-        // il nome del dispositivo arriva dall'esterno: va sempre quotato
+        // the device name comes from outside: always quote it
         final String js =
             "window.dispatchEvent(new CustomEvent('penbutton',{detail:{id:" +
             JSONObject.quote(id) +

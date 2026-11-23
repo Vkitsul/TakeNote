@@ -1,19 +1,19 @@
-// Geometria e disegno dei tratti di penna e delle immagini.
-// Un tratto: { id, t:'s', k: tipo, c: colore, w: spessore, sp: pressione simulata, pts: Float32Array [x,y,p,...], bb }
-// Un'immagine: { id, t:'i', f: fileId, x, y, w, h }
+// Geometry and drawing of pen strokes and images.
+// A stroke: { id, t:'s', k: type, c: color, w: width, sp: simulated pressure, pts: Float32Array [x,y,p,...], bb }
+// An image: { id, t:'i', f: fileId, x, y, w, h }
 import { getStroke } from 'perfect-freehand'
 import { uid, bbIntersects, distSqToSegment } from './util.js'
 import { getImage } from './images.js'
 import { isDark, displayColor, DARK_FILTER } from './theme.js'
 
-// line: true = tratto a spessore costante (come Paint): nessuna pressione, curva che segue i campioni
+// line: true = constant-width stroke (like Paint): no pressure, a curve that follows the samples
 export const PEN_TYPES = {
-  plain: { label: 'Tratto uniforme', line: true, alpha: 1 },
-  fountain: { label: 'Stilografica', thinning: 0.6, smoothing: 0.55, streamline: 0.32, alpha: 1 },
-  ballpoint: { label: 'Sfera', thinning: 0.18, smoothing: 0.5, streamline: 0.32, alpha: 1 },
-  brush: { label: 'Pennello', thinning: 0.82, smoothing: 0.6, streamline: 0.38, alpha: 1, taper: true },
-  pencil: { label: 'Matita', thinning: 0.4, smoothing: 0.5, streamline: 0.3, alpha: 0.88, texture: true },
-  highlighter: { label: 'Evidenziatore', line: true, alpha: 0.38, blend: 'multiply' },
+  plain: { label: 'Uniform', line: true, alpha: 1 },
+  fountain: { label: 'Fountain pen', thinning: 0.6, smoothing: 0.55, streamline: 0.32, alpha: 1 },
+  ballpoint: { label: 'Ballpoint', thinning: 0.18, smoothing: 0.5, streamline: 0.32, alpha: 1 },
+  brush: { label: 'Brush', thinning: 0.82, smoothing: 0.6, streamline: 0.38, alpha: 1, taper: true },
+  pencil: { label: 'Pencil', thinning: 0.4, smoothing: 0.5, streamline: 0.3, alpha: 0.88, texture: true },
+  highlighter: { label: 'Highlighter', line: true, alpha: 0.38, blend: 'multiply' },
 }
 
 export function strokeBB(pts, w) {
@@ -63,14 +63,14 @@ export function strokeOutline(s, last = true) {
 
 const f2 = (v) => Math.round(v * 100) / 100
 
-// Curva che passa per i punti medi dei campioni, con i campioni come punti di controllo: toglie gli
-// spigoli senza introdurre ritardo. Stessa costruzione del livello nativo (InkOverlayView.java).
+// Curve through the midpoints of the samples, with the samples as control points: removes the
+// corners without adding lag. Same construction as the native layer (InkOverlayView.java).
 export function polylinePath(pts) {
   const p = new Path2D()
   const n = pts.length
   if (n < 3) return p
   p.moveTo(pts[0], pts[1])
-  // un punto solo: segmento minuscolo, così il tappo tondo disegna il puntino
+  // a single point: a tiny segment, so the round cap draws a dot
   if (n === 3) {
     p.lineTo(pts[0] + 0.01, pts[1])
     return p
@@ -81,7 +81,7 @@ export function polylinePath(pts) {
   return p
 }
 
-// Stesso tracciato in formato SVG (per l'export PDF)
+// Same path in SVG format (for PDF export)
 export function polylineSvg(pts) {
   const n = pts.length
   if (n < 3) return ''
@@ -106,7 +106,7 @@ export function outlineToPath(o) {
   return p
 }
 
-// Stesso contorno in formato SVG (per l'export PDF)
+// Same outline in SVG format (for PDF export)
 export function outlineToSvg(o) {
   const n = o.length
   if (n < 2) return ''
@@ -129,7 +129,7 @@ export function strokePath(s) {
   return p
 }
 
-// --- Texture matita ---
+// --- Pencil texture ---
 let noiseTile = null
 const pencilPatterns = new Map()
 function pencilPattern(ctx, color) {
@@ -162,13 +162,13 @@ function pencilPattern(ctx, color) {
   return pat
 }
 
-// original = true: colori reali (snip, miniature); altrimenti colori di visualizzazione (modalità scura)
+// original = true: real colors (snips, thumbnails); otherwise display colors (dark mode)
 export function applyStrokeStyle(ctx, s, original = false) {
   const T = PEN_TYPES[s.k] || PEN_TYPES.ballpoint
   const dark = !original && isDark()
   const color = original ? s.c : displayColor(s.c)
   ctx.globalAlpha = dark && T.blend ? Math.min(1, T.alpha + 0.08) : T.alpha
-  // su fondo scuro l'evidenziatore "schiarisce" invece di moltiplicare
+  // on a dark background the highlighter "lightens" instead of multiplying
   ctx.globalCompositeOperation = T.blend ? (dark ? 'screen' : T.blend) : 'source-over'
   if (T.line) ctx.strokeStyle = color
   else ctx.fillStyle = T.texture ? pencilPattern(ctx, color) : color
@@ -200,7 +200,7 @@ export function drawImageItem(ctx, it, original = false) {
   }
 }
 
-// Disegna gli elementi (ctx già trasformato in coordinate pagina). cull = [x0,y0,x1,y1] opzionale.
+// Draws the items (ctx already transformed to page coordinates). cull = [x0,y0,x1,y1] optional.
 export function drawItems(ctx, items, cull, original = false) {
   for (const it of items) {
     if (cull && !bbIntersects(itemBB(it), cull)) continue
@@ -211,7 +211,7 @@ export function drawItems(ctx, items, cull, original = false) {
   ctx.globalCompositeOperation = 'source-over'
 }
 
-// Scala k attorno all'origine e poi trasla (dx, dy).
+// Scales by k around the origin, then translates by (dx, dy).
 export function transformItem(it, k, dx, dy, newId = false) {
   const id = newId ? uid() : it.id
   if (it.t === 's') {
@@ -228,13 +228,13 @@ export function transformItem(it, k, dx, dy, newId = false) {
   return { ...it, id, x: it.x * k + dx, y: it.y * k + dy, w: it.w * k, h: it.h * k }
 }
 
-// Il tratto passa entro r dal segmento (ax,ay)-(bx,by)?
+// Does the stroke pass within r of the segment (ax,ay)-(bx,by)?
 export function strokeHitsSegment(s, ax, ay, bx, by, r) {
   const rr = r + s.w * 0.5
   const pts = s.pts
   const n = pts.length
   if (n === 3) return distSqToSegment(pts[0], pts[1], ax, ay, bx, by) <= rr * rr
-  // campiona il segmento della gomma
+  // sample the eraser segment
   const len = Math.hypot(bx - ax, by - ay)
   const steps = Math.max(1, Math.ceil(len / Math.max(1, r * 0.5)))
   for (let k = 0; k <= steps; k++) {

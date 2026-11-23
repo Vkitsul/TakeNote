@@ -1,5 +1,5 @@
-// Selezione "sollevata": elementi tolti dalle pagine, mostrati su un canvas flottante,
-// spostabili (anche tra pagine), ridimensionabili, ricolorabili, copiabili, eliminabili.
+// "Lifted" selection: items taken off the pages and shown on a floating canvas,
+// that can be moved (even across pages), resized, recolored, copied and deleted.
 import { h, clamp, bbUnion } from '../util.js'
 import { icon } from '../icons.js'
 import { drawItems, itemBB, transformItem } from '../ink.js'
@@ -38,18 +38,18 @@ export class Selection {
   buildMenu() {
     const btn = (ic, label, fn, cls = '') =>
       h('button', { class: 'sel-btn ' + cls, title: label, onclick: (e) => { e.stopPropagation(); fn(e.currentTarget) } }, icon(ic, 20), h('span', null, label))
-    this.colorBtn = btn('palette', 'Colore', (el) => this.pickColor(el))
+    this.colorBtn = btn('palette', 'Color', (el) => this.pickColor(el))
     this.menu.append(
       this.colorBtn,
-      btn('copy', 'Copia', () => this.copy()),
-      btn('cut', 'Taglia', () => this.cut()),
-      btn('duplicate', 'Duplica', () => this.duplicate()),
-      btn('tray', 'Salva snip', () => this.saveSnip()),
-      btn('trash', 'Elimina', () => this.remove(), 'danger')
+      btn('copy', 'Copy', () => this.copy()),
+      btn('cut', 'Cut', () => this.cut()),
+      btn('duplicate', 'Duplicate', () => this.duplicate()),
+      btn('tray', 'Save snip', () => this.saveSnip()),
+      btn('trash', 'Delete', () => this.remove(), 'danger')
     )
   }
 
-  // groups: [{ entry, items }] con elementi in coordinate pagina
+  // groups: [{ entry, items }] with items in page coordinates
   liftFromPages(groups) {
     this.drop()
     const before = new Map()
@@ -64,12 +64,12 @@ export class Selection {
       for (const it of its) items.push(transformItem(it, 1, entry.x, entry.y))
     }
     this.origin = { kind: 'pages', before }
-    // se l'app si chiude con la selezione attiva, salva le pagine com'erano prima
+    // if the app closes with the selection active, save the pages as they were before
     this.ed.doc.saveOverride = before
     this.start(items)
   }
 
-  // Elementi nuovi (incolla, duplica, snip, trascina dal vassoio) in coordinate mondo
+  // New items (paste, duplicate, snip, drag from the tray) in world coordinates
   liftNew(items, { discardIfUntouched = false } = {}) {
     this.drop()
     this.origin = { kind: 'new', discardIfUntouched }
@@ -111,7 +111,7 @@ export class Selection {
     drawItems(ctx, this.items, null)
   }
 
-  // bounding box con la trasformazione in corso
+  // bounding box with the current transform
   liveBB() {
     const { k, dx, dy, ox, oy } = this.tf
     const [x0, y0, x1, y1] = this.bb
@@ -138,7 +138,7 @@ export class Selection {
     this.menu.style.visibility = this.drag ? 'hidden' : ''
   }
 
-  // --- Trascinamento ---
+  // --- Dragging ---
   onDown(e) {
     e.stopPropagation()
     e.preventDefault()
@@ -148,7 +148,7 @@ export class Selection {
     try {
       this.box.setPointerCapture(e.pointerId)
     } catch {
-      /* puntatore non catturabile */
+      /* pointer cannot be captured */
     }
     const v = this.view
     const handle = e.target.dataset?.h
@@ -242,7 +242,7 @@ export class Selection {
     this.ed.onSelectionChange?.()
   }
 
-  // Rilascia la selezione sulla pagina sotto il suo centro.
+  // Drops the selection onto the page under its center.
   drop() {
     if (!this.items) return
     if (this.drag?.moved) this.applyTransform()

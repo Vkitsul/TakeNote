@@ -19,9 +19,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Destinazione del backup automatico scelta dall'utente col selettore file di Android
- * (Google Drive, memoria del tablet, altre app). L'app conserva il permesso e riscrive
- * lo stesso file a ogni backup, senza login né configurazioni Google.
+ * Automatic backup destination chosen by the user with the Android file picker
+ * (Google Drive, tablet storage, other apps). The app keeps the permission and rewrites
+ * the same file on every backup, with no Google sign-in or setup.
  */
 @CapacitorPlugin(name = "BackupTarget")
 public class BackupTargetPlugin extends Plugin {
@@ -66,20 +66,20 @@ public class BackupTargetPlugin extends Plugin {
         call.resolve(ret);
     }
 
-    // Copia un file locale (path o file://) nella destinazione scelta.
+    // Copies a local file (path or file://) to the chosen destination.
     @PluginMethod
     public void write(PluginCall call) {
         String target = call.getString("uri");
         String source = call.getString("path");
         if (target == null || source == null) {
-            call.reject("uri e path obbligatori");
+            call.reject("uri and path are required");
             return;
         }
         execute(() -> {
             File file = new File(source.startsWith("file:") ? Uri.parse(source).getPath() : source);
             Uri uri = Uri.parse(target);
             try (InputStream in = new FileInputStream(file); OutputStream out = openForWrite(uri)) {
-                if (out == null) throw new FileNotFoundException("destinazione non disponibile");
+                if (out == null) throw new FileNotFoundException("destination not available");
                 byte[] buf = new byte[1 << 16];
                 int n;
                 long total = 0;
@@ -94,7 +94,7 @@ public class BackupTargetPlugin extends Plugin {
             } catch (SecurityException e) {
                 call.reject("permesso", "PERMISSION", e);
             } catch (Exception e) {
-                call.reject(e.getMessage() != null ? e.getMessage() : "scrittura fallita", e);
+                call.reject(e.getMessage() != null ? e.getMessage() : "write failed", e);
             }
         });
     }
@@ -103,7 +103,7 @@ public class BackupTargetPlugin extends Plugin {
         try {
             return getContext().getContentResolver().openOutputStream(uri, "wt");
         } catch (FileNotFoundException | IllegalArgumentException | UnsupportedOperationException e) {
-            // alcuni provider non supportano "wt"
+            // some providers do not support "wt"
             return getContext().getContentResolver().openOutputStream(uri, "w");
         }
     }
@@ -119,7 +119,7 @@ public class BackupTargetPlugin extends Plugin {
         String a = uri.getAuthority();
         if (a == null) return "";
         if (a.startsWith("com.google.android.apps.docs")) return "Google Drive";
-        if (a.equals("com.android.externalstorage.documents")) return "Memoria del tablet";
+        if (a.equals("com.android.externalstorage.documents")) return "Tablet storage";
         if (a.equals("com.android.providers.downloads.documents")) return "Download";
         return a;
     }

@@ -1,4 +1,4 @@
-// Vassoio degli snip: ritagli salvati, da trascinare (o toccare) per inserirli in qualsiasi pagina/quaderno.
+// Snip tray: saved clippings to drag (or tap) into any page or notebook.
 import { h } from '../util.js'
 import { icon } from '../icons.js'
 import { confirmDialog, toast } from '../ui.js'
@@ -11,7 +11,7 @@ export class SnipsPanel {
     this.isOpen = false
     this.urls = new Map()
     this.list = h('div', { class: 'panel-list snips-list' })
-    this.empty = h('div', { class: 'panel-empty' }, icon('snip', 36), h('p', null, 'Nessuno snip.'), h('p', { class: 'muted' }, 'Usa lo strumento Snip per ritagliare una parte di pagina o di PDF.'))
+    this.empty = h('div', { class: 'panel-empty' }, icon('snip', 36), h('p', null, 'No snips.'), h('p', { class: 'muted' }, 'Use the Snip tool to clip part of a page or PDF.'))
     this.el = h(
       'aside',
       { class: 'side-panel right' },
@@ -19,9 +19,9 @@ export class SnipsPanel {
         'div',
         { class: 'panel-head' },
         h('h3', null, 'Snip'),
-        h('button', { class: 'icon-btn', title: 'Chiudi', onclick: () => this.close() }, icon('close'))
+        h('button', { class: 'icon-btn', title: 'Close', onclick: () => this.close() }, icon('close'))
       ),
-      h('p', { class: 'panel-hint' }, 'Trascina uno snip sulla pagina, oppure toccalo per inserirlo al centro.'),
+      h('p', { class: 'panel-hint' }, 'Drag a snip onto the page, or tap it to insert it in the middle.'),
       this.list
     )
   }
@@ -77,12 +77,12 @@ export class SnipsPanel {
   async makeItem(snip) {
     const url = await this.urlFor(snip)
     const img = h('img', { src: url, draggable: 'false', alt: 'snip' })
-    const del = h('button', { class: 'snip-del', title: 'Elimina snip' }, icon('close', 16))
+    const del = h('button', { class: 'snip-del', title: 'Delete snip' }, icon('close', 16))
     const item = h('div', { class: 'snip-item' }, img, del)
     del.addEventListener('pointerdown', (e) => e.stopPropagation())
     del.addEventListener('click', async (e) => {
       e.stopPropagation()
-      if (!(await confirmDialog('Eliminare questo snip dal vassoio? Le copie già inserite nelle pagine restano.', { okLabel: 'Elimina', danger: true }))) return
+      if (!(await confirmDialog('Delete this snip from the tray? Copies already placed on pages stay.', { okLabel: 'Delete', danger: true }))) return
       await db.del('snips', snip.id)
       item.remove()
       if (!this.list.children.length) this.list.append(this.empty)
@@ -123,7 +123,7 @@ export class SnipsPanel {
         } else if (ev.type === 'pointerup') {
           this.ed.insertSnip(snip)
           if (window.innerWidth < 900) this.close()
-          toast('Snip inserito: spostalo dove vuoi')
+          toast('Snip inserted: move it anywhere')
         }
       }
       item.addEventListener('pointermove', move)

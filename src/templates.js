@@ -1,32 +1,32 @@
-// Sfondi carta (righe, quadretti, puntini). Coordinate in punti PDF (1/72 di pollice).
+// Paper backgrounds (lines, grids, dots). Coordinates in PDF points (1/72 inch).
 export const MM = 72 / 25.4
 
 export const PAGE_SIZES = {
-  a4p: { label: 'A4 verticale', w: 595.28, h: 841.89 },
-  a4l: { label: 'A4 orizzontale', w: 841.89, h: 595.28 },
+  a4p: { label: 'A4 portrait', w: 595.28, h: 841.89 },
+  a4l: { label: 'A4 landscape', w: 841.89, h: 595.28 },
 }
 
 export const TEMPLATES = [
-  { id: 'blank', label: 'Bianco' },
-  { id: 'lined', label: 'Righe' },
-  { id: 'narrow', label: 'Righe strette' },
-  { id: 'grid', label: 'Quadretti 5 mm' },
-  { id: 'grid4', label: 'Quadretti 4 mm' },
-  { id: 'mm', label: 'Millimetrata' },
-  { id: 'dotted', label: 'Puntini' },
+  { id: 'blank', label: 'Blank' },
+  { id: 'lined', label: 'Lined' },
+  { id: 'narrow', label: 'Narrow lines' },
+  { id: 'grid', label: 'Grid 5 mm' },
+  { id: 'grid4', label: 'Grid 4 mm' },
+  { id: 'mm', label: 'Graph paper (mm)' },
+  { id: 'dotted', label: 'Dotted' },
 ]
 
 export const PAPERS = [
-  { c: '#ffffff', label: 'Bianca' },
-  { c: '#fbf7ec', label: 'Avorio' },
-  { c: '#fffbe6', label: 'Gialla' },
-  { c: '#f1f5f9', label: 'Grigia' },
+  { c: '#ffffff', label: 'White' },
+  { c: '#fbf7ec', label: 'Ivory' },
+  { c: '#fffbe6', label: 'Yellow' },
+  { c: '#f1f5f9', label: 'Gray' },
 ]
 
 const geomCache = new Map()
 
-// Restituisce linee e punti del modello: { lines: [x0,y0,x1,y1,...], dots: [x,y,...], rgb, alpha, dotR, extra }
-// extra = altri gruppi di linee con peso diverso: [{ lines, alpha, lw, minRes }]
+// Returns the template's lines and dots: { lines: [x0,y0,x1,y1,...], dots: [x,y,...], rgb, alpha, dotR, extra }
+// extra = other line groups with a different weight: [{ lines, alpha, lw, minRes }]
 export function templateGeometry(tpl, w, h) {
   const key = `${tpl}:${w}:${h}`
   let g = geomCache.get(key)
@@ -49,7 +49,7 @@ export function templateGeometry(tpl, w, h) {
     for (let x = ox; x <= w; x += sp) lines.push(x, 0, x, h)
     for (let y = oy; y <= h; y += sp) lines.push(0, y, w, y)
   } else if (tpl === 'mm') {
-    // carta millimetrata: 1 mm leggero, 5 mm medio, 1 cm marcato
+    // graph paper: 1 mm light, 5 mm medium, 1 cm bold
     rgb = [205, 110, 50]
     alpha = 0.3
     const minor = [], major = []
@@ -89,7 +89,7 @@ export function drawTemplate(ctx, tpl, w, h, res, dark = false) {
     }
     ctx.stroke()
   }
-  // le linee più fitte si saltano quando sarebbero più vicine di qualche pixel (miniature)
+  // the densest lines are skipped when they would be only a few pixels apart (thumbnails)
   for (const x of g.extra) if (res >= x.minRes) strokeLines(x.lines, x.alpha, x.lw)
   strokeLines(g.lines, g.alpha, 0.45)
   if (g.dots.length) {

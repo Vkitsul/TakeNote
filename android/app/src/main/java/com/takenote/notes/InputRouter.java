@@ -5,16 +5,16 @@ import android.view.MotionEvent;
 import java.util.HashMap;
 
 /**
- * Smista ogni tocco prima che arrivi all'app: la penna va al livello del tratto (o al WebView),
- * le dita passano solo se non sono la mano appoggiata.
+ * Routes every touch before it reaches the app: the pen goes to the stroke layer (or the WebView),
+ * fingers pass only if they are not the resting hand.
  *
- * Una mano viene scartata quando tocca lo schermo mentre la penna scrive, è sospesa sopra lo
- * schermo o si è appena sollevata; quando tocca vicino al punto in cui la penna ha scritto da
- * poco; quando l'area di contatto è troppo grande per un dito. Un tocco già in corso (la mano
- * arrivata prima della penna) viene annullato appena la penna tocca.
+ * A hand is dropped when it touches the screen while the pen is writing, hovering over the
+ * screen or has just lifted; when it touches near where the pen wrote a moment
+ * ago; when the contact area is too large for a finger. A touch already in progress (the hand
+ * arriving before the pen) is cancelled as soon as the pen touches.
  *
- * Funziona sia quando penna e dita sono dispositivi di input separati, sia quando arrivano
- * mescolate nello stesso flusso: in quel caso la penna viene estratta in un evento tutto suo.
+ * It works both when pen and fingers are separate input devices and when they arrive
+ * mixed in the same stream: in that case the pen is split out into an event of its own.
  */
 final class InputRouter {
 
@@ -59,7 +59,7 @@ final class InputRouter {
     private long lastContactTime = NEVER;
     private float penX;
     private float penY;
-    // se il pannello riporta aree di contatto inattendibili, il controllo sulla dimensione si disattiva da solo
+    // if the panel reports unreliable contact areas, the size check turns itself off
     private int sizeOnlyRejects;
     private boolean sizeTrusted = true;
 
@@ -99,7 +99,7 @@ final class InputRouter {
             s.downTime = ev.getEventTime();
             streams.put(key, s);
         } else if (s == null) {
-            return app.dispatch(ev); // gesto di cui non si è visto l'inizio
+            return app.dispatch(ev); // gesture whose start was not seen
         }
 
         int pen = -1;
@@ -116,12 +116,12 @@ final class InputRouter {
         boolean mixed = pen >= 0 || s.penActive;
         if (mixed) {
             handlePen(s, ev, action, pen);
-            // nello stesso flusso della penna le dita non passano mai
+            // fingers never pass in the same stream as the pen
             if (hands) reject(s);
         } else if (hands) {
             result = handleHands(s, ev, action);
         } else {
-            result = app.dispatch(ev); // mouse o altro
+            result = app.dispatch(ev); // mouse or other
         }
         if (ended) {
             streams.remove(key);
@@ -130,7 +130,7 @@ final class InputRouter {
         return result;
     }
 
-    // --- Penna ---
+    // --- Pen ---
     private void handlePen(Stream s, MotionEvent ev, int action, int pen) {
         long now = ev.getEventTime();
         int penAction;
@@ -187,7 +187,7 @@ final class InputRouter {
         if (synthesized) pe.recycle();
     }
 
-    // Evento con la sola penna (e i suoi campioni intermedi), estratto da un flusso che contiene anche dita.
+    // Event with only the pen (and its historical samples), split out of a stream that also has fingers.
     private static MotionEvent penOnly(MotionEvent ev, int pen, int action, long downTime) {
         MotionEvent.PointerProperties[] props = { new MotionEvent.PointerProperties() };
         MotionEvent.PointerCoords[] coords = { new MotionEvent.PointerCoords() };
@@ -215,7 +215,7 @@ final class InputRouter {
         return out;
     }
 
-    /** Penna sospesa sopra lo schermo (eventi hover). */
+    /** Pen hovering over the screen (hover events). */
     void onHover(MotionEvent ev) {
         if (!isPen(ev.getToolType(0))) return;
         int action = ev.getActionMasked();
@@ -225,11 +225,11 @@ final class InputRouter {
         lastPenTime = now;
         penX = ev.getX();
         penY = ev.getY();
-        // la penna si avvicina: un tocco appena iniziato è quasi certamente la mano che si appoggia
+        // the pen is approaching: a touch that just started is almost certainly the hand coming to rest
         if (penHover && !was && enabled) cancelHands(YOUNG_GESTURE_MS, now);
     }
 
-    // --- Dita ---
+    // --- Fingers ---
     private boolean handleHands(Stream s, MotionEvent ev, int action) {
         if (!s.decided) {
             s.decided = true;
@@ -285,7 +285,7 @@ final class InputRouter {
         s.rejected = true;
     }
 
-    // Annulla nell'app un gesto delle dita già iniziato: non lascia clic né scorrimenti a metà.
+    // Cancels a finger gesture already started in the app: no half-finished clicks or scrolls are left.
     private void cancel(Stream s) {
         if (s.forwarded && s.last != null) {
             MotionEvent c = MotionEvent.obtain(s.last);

@@ -1,6 +1,6 @@
-// Vista continua delle pagine: camera (pan/zoom), montaggio virtuale, rendering a strati.
-// Ogni pagina ha un livello "base" (pagina intera, risoluzione limitata) e, quando si zooma molto,
-// un livello "dettaglio" a piena risoluzione che copre solo la parte visibile.
+// Continuous page view: camera (pan/zoom), virtual mounting, layered rendering.
+// Every page has a "base" layer (whole page, capped resolution) and, when zoomed in a lot,
+// a full-resolution "detail" layer that covers only the visible part.
 import { h, clamp } from '../util.js'
 import { drawItems } from '../ink.js'
 import { drawTemplate } from '../templates.js'
@@ -14,8 +14,8 @@ const PAD = 22
 const ADD_H = 64
 const BASE_MAX_PX = 6e6
 const DETAIL_PAD = 0.12
-const PAN_SLOP = 8 // px: sotto questa soglia un dito fermo (o la mano appoggiata) non muove la pagina
-const ZOOM_DEADZONE = 0.06 // due dita che scorrono non cambiano lo zoom per piccole variazioni
+const PAN_SLOP = 8 // px: below this threshold a still finger (or a resting hand) does not move the page
+const ZOOM_DEADZONE = 0.06 // two scrolling fingers do not change the zoom for small variations
 const REVERT_MAX_PX = 140
 
 const tierRes = (r) => Math.pow(2, Math.ceil(Math.log2(Math.max(r, 0.05)) * 2 - 1e-6) / 2)
@@ -26,9 +26,9 @@ function releaseCanvas(c) {
   c.height = 0
 }
 
-// Un livello è un solo canvas opaco con carta, PDF, sfondo e inchiostro già composti: così lo schermo
-// deve fondere meno strati a ogni fotogramma. Il PDF resta a parte in un canvas fuori dal DOM, per
-// ridisegnare in fretta una zona dopo una cancellatura.
+// A layer is a single opaque canvas with paper, PDF, background and ink already composited, so the screen
+// has fewer layers to blend each frame. The PDF is kept apart in an off-DOM canvas, to
+// redraw an area quickly after erasing.
 class Layer {
   constructor(pv, region, res, isDetail) {
     this.pv = pv
@@ -54,7 +54,7 @@ class Layer {
     return sx
   }
 
-  // sub = [x0,y0,x1,y1] in coordinate pagina: ridisegna solo quella zona
+  // sub = [x0,y0,x1,y1] in page coordinates: redraws only that area
   render(sub) {
     const page = this.pv.page
     const c = this.canvas
@@ -72,7 +72,7 @@ class Layer {
     if (sub) {
       const pad = 2 / sx
       const sy = c.height / r.h
-      // bordi allineati ai pixel: un ritaglio sfumato lascerebbe aloni dopo la gomma
+      // pixel-aligned edges: a soft clip would leave halos after erasing
       x0 = Math.max(r.x + Math.floor((sub[0] - pad - r.x) * sx) / sx, x0)
       y0 = Math.max(r.y + Math.floor((sub[1] - pad - r.y) * sy) / sy, y0)
       x1 = Math.min(r.x + Math.ceil((sub[2] + pad - r.x) * sx) / sx, x1)
@@ -101,7 +101,7 @@ class Layer {
     ctx.restore()
   }
 
-  // (Ri)carica il PDF alla risoluzione corrente. Senza PDF il livello è già completo.
+  // (Re)loads the PDF at the current resolution. Without a PDF the layer is already complete.
   loadBackground(prio = 0) {
     const page = this.pv.page
     this.pdfJob?.cancel()
@@ -125,12 +125,12 @@ class Layer {
         this.onBgReady?.()
       },
       (e) => {
-        if (!isCancel(e)) console.warn('Render PDF fallito', e)
+        if (!isCancel(e)) console.warn('PDF render failed', e)
       }
     )
   }
 
-  // Cambio tema: il PDF va rigenerato, perché l'inversione è già nei suoi pixel.
+  // Theme change: the PDF must be regenerated, because the inversion is baked into its pixels.
   resetBackground() {
     releaseCanvas(this.pdfBitmap)
     this.pdfBitmap = null
@@ -147,7 +147,7 @@ class Layer {
   }
 }
 
-// PDF invertito una volta sola, invece di un filtro CSS ricalcolato a ogni fotogramma.
+// PDF inverted once, instead of a CSS filter recomputed every frame.
 function invertedCopy(src) {
   const c = document.createElement('canvas')
   c.width = src.width
@@ -185,7 +185,7 @@ class PageView {
     return Math.min(tierRes(target), cap)
   }
 
-  // draft: pagina montata mentre si scorre, a mezza risoluzione; a pagina ferma viene rifinita
+  // draft: page mounted while scrolling, at half resolution; refined once the page stops
   ensureBase(target, prio, draft = false) {
     const res = this.baseResFor(target) * (draft && !this.page.pdf ? 0.5 : 1)
     if (!this.base) {
@@ -246,7 +246,7 @@ class PageView {
     for (const l of this.layers()) l.render(sub)
   }
 
-  // Carta o sfondo cambiati
+  // Paper or background changed
   redrawBg() {
     for (const l of this.layers()) {
       l.render()
@@ -274,7 +274,7 @@ export class View {
     this.doc = doc
     this.el = h('div', { class: 'viewport' })
     this.world = h('div', { class: 'world' })
-    this.addBtn = h('button', { class: 'add-page', onclick: () => onAddPage?.() }, '+ Nuova pagina')
+    this.addBtn = h('button', { class: 'add-page', onclick: () => onAddPage?.() }, '+ New page')
     this.world.append(this.addBtn)
     this.live = h('canvas', { class: 'live' })
     this.overlay = h('div', { class: 'overlay' })
@@ -302,7 +302,7 @@ export class View {
     this.fling = 0
     this.lastTap = null
     this.handlers = {}
-    this.isBusy = () => false // true mentre si scrive: i lavori pesanti aspettano
+    this.isBusy = () => false // true while writing: heavy work waits
     this.moving = false
     this.qualityRaf = 0
     this.unsub = [
@@ -434,7 +434,7 @@ export class View {
   cameraChanged() {
     if (!this.moving) {
       this.moving = true
-      setPdfRenderSlow(true) // il PDF si disegna a piccoli passi finché la pagina si muove
+      setPdfRenderSlow(true) // the PDF draws in small steps while the page moves
     }
     for (const fn of this.camListeners) fn()
     if (!this.mountRaf) {
@@ -500,7 +500,7 @@ export class View {
     this.fling = requestAnimationFrame(step)
   }
 
-  // --- Coordinate ---
+  // --- Coordinates ---
   toWorld(clientX, clientY) {
     return { x: (clientX - this.left - this.tx) / this.s, y: (clientY - this.top - this.ty) / this.s }
   }
@@ -550,7 +550,7 @@ export class View {
     return best
   }
 
-  // --- Montaggio e qualità ---
+  // --- Mounting and quality ---
   updateMount() {
     if (!this.ready) return
     const v = this.visibleWorld()
@@ -587,7 +587,7 @@ export class View {
     }
   }
 
-  // Pagina ferma: le pagine visibili si rifiniscono subito, le altre una per fotogramma.
+  // Page at rest: visible pages are refined right away, the others one per frame.
   updateQuality() {
     if (!this.ready) return
     this.moving = false
@@ -614,7 +614,7 @@ export class View {
     cancelAnimationFrame(this.qualityRaf)
     const step = () => {
       this.qualityRaf = 0
-      if (this.moving) return // riparte al prossimo arresto
+      if (this.moving) return // resumes at the next stop
       if (this.isBusy()) {
         this.qualityRaf = requestAnimationFrame(step)
         return
@@ -630,7 +630,7 @@ export class View {
     if (later.length) this.qualityRaf = requestAnimationFrame(step)
   }
 
-  // --- Eventi dal modello ---
+  // --- Model events ---
   onItems(pageId, change) {
     const pv = this.views.get(pageId)
     if (!pv) return
@@ -654,7 +654,7 @@ export class View {
     }
   }
 
-  // Cambio tema: carta e inchiostro vanno ridisegnati (lo sfondo PDF lo inverte il CSS)
+  // Theme change: paper and ink must be redrawn (the CSS inverts the PDF background)
   refreshTheme() {
     for (const [id, pv] of this.views) {
       const e = this.entryById.get(id)
@@ -669,7 +669,7 @@ export class View {
     }
   }
 
-  // --- Canvas "live" (tratto in corso, lazo, ritaglio) ---
+  // --- "Live" canvas (stroke in progress, lasso, clipping) ---
   clearLive() {
     const c = this.liveCtx
     c.setTransform(1, 0, 0, 1, 0, 0)
@@ -686,13 +686,13 @@ export class View {
     this.liveCtx.setTransform(k, 0, 0, k, this.tx * this.dpr, this.ty * this.dpr)
   }
 
-  // --- Gesti con le dita: 1 dito scorre, 2 dita zoom, tap con 2/3 dita = annulla/ripeti ---
+  // --- Finger gestures: 1 finger scrolls, 2 fingers zoom, 2/3-finger tap = undo/redo ---
   stopFling() {
     cancelAnimationFrame(this.fling)
     this.fling = 0
   }
 
-  // revert: il gesto era la mano appoggiata prima della penna, quindi la pagina torna dov'era
+  // revert: the gesture was the hand resting before the pen, so the page goes back where it was
   cancelTouches(revert = false) {
     const g = this.gesture
     this.touches.clear()
@@ -701,7 +701,7 @@ export class View {
     if (revert && g) this.revertGesture(g)
   }
 
-  // Solo per piccoli spostamenti: uno scorrimento lungo è voluto e resta.
+  // Only for small movements: a long scroll is intentional and stays.
   revertGesture(g) {
     const c = g.cam0
     if (!c) return
@@ -776,7 +776,7 @@ export class View {
       if (Math.abs(d - g.d0) > 12) g.moved = true
       if (!g.zooming && Math.abs(d / g.d0 - 1) > ZOOM_DEADZONE) {
         g.zooming = true
-        g.d0 = d // lo zoom parte da qui, senza scatti
+        g.d0 = d // zoom starts from here, without a jump
         g.s0 = this.s
       }
       const mx = (a.x + b.x) / 2 - this.left, my = (a.y + b.y) / 2 - this.top
@@ -793,7 +793,7 @@ export class View {
     const g = this.gesture
     if (!g) return
     if (this.touches.size > 0) {
-      // due dita che scorrevano: l'inerzia parte quando si alza il primo
+      // two fingers were scrolling: momentum starts when the first one lifts
       if (!cancelled && g.mode === 'pinch' && !g.zooming) g.pendingFling = { v: this.flingVelocity(g, e.timeStamp), t: e.timeStamp }
       this.beginGesturePhase()
       return

@@ -1,4 +1,4 @@
-// Caricamento e rendering dei PDF con pdf.js, con coda a priorità.
+// PDF loading and rendering with pdf.js, through a priority queue.
 import * as pdfjsLib from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import * as db from './db.js'
@@ -43,7 +43,7 @@ export function getPdfPage(fileId, index) {
   return p
 }
 
-// Legge dimensioni e trasformazione di ogni pagina (coordinate viewport a scala 1).
+// Reads the size and transform of every page (viewport coordinates at scale 1).
 export async function readPdfPages(doc, onProgress) {
   const out = []
   for (let i = 1; i <= doc.numPages; i++) {
@@ -55,8 +55,8 @@ export async function readPdfPages(doc, onProgress) {
   return out
 }
 
-// pdf.js disegna sul thread principale a blocchi: mentre si scrive i blocchi aspettano,
-// così non rubano tempo all'input della penna.
+// pdf.js draws on the main thread in chunks: while the user writes, the chunks wait,
+// so they never take time from pen input.
 let paused = false
 const waiting = []
 export function setPdfRenderPaused(v) {
@@ -64,13 +64,13 @@ export function setPdfRenderPaused(v) {
   if (!v) for (const go of waiting.splice(0)) go()
 }
 
-// Mentre la pagina scorre i blocchi si distanziano: il PDF arriva lo stesso, ma senza scatti.
+// While the page scrolls the chunks are spaced out: the PDF still arrives, without stutter.
 let slow = false
 export function setPdfRenderSlow(v) {
   slow = v
 }
 
-// --- Coda di rendering: priorità più bassa = più urgente ---
+// --- Render queue: lower priority = more urgent ---
 const queue = []
 let running = 0
 const MAX_CONCURRENT = 2
@@ -89,8 +89,8 @@ function pump() {
 }
 
 /**
- * Disegna la regione `region` (unità pagina) della pagina PDF `ref` = {f, i} su un nuovo canvas a `res` px/unità.
- * Ritorna { canvas, promise, cancel, setPriority }.
+ * Draws `region` (page units) of the PDF page `ref` = {f, i} onto a new canvas at `res` px/unit.
+ * Returns { canvas, promise, cancel, setPriority }.
  */
 export function renderPdfRegion(ref, res, region, prio = 1) {
   const canvas = document.createElement('canvas')

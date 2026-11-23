@@ -1,8 +1,8 @@
-// Collegamento col livello nativo Android che disegna il tratto in corso (InkOverlayPlugin).
-// L'app gli comunica dove e come si può scrivere; lui disegna senza passare dal WebView e, a penna
-// sollevata, restituisce i punti: il tratto entra nella pagina come tutti gli altri.
-// Quando il livello non può occuparsene (altri strumenti, forme, menu aperti, pagina in movimento)
-// la penna arriva al WebView come sempre.
+// Bridge to the native Android layer that draws the live stroke (InkOverlayPlugin).
+// The app tells it where and how the user can write; it draws without going through the WebView and,
+// when the pen lifts, returns the points: the stroke joins the page like any other.
+// When the layer cannot handle it (other tools, shapes, open menus, page in motion)
+// the pen reaches the WebView as usual.
 import { Capacitor } from '@capacitor/core'
 import { InkOverlay } from '../palm.js'
 import { settings } from '../settings.js'
@@ -22,10 +22,10 @@ export class NativeInk {
     this.onEvent = (e) => this.handle(e.detail || {})
     window.addEventListener('nativeink', this.onEvent)
     this.offCam = ed.view.onCamera(() => this.cameraMoved())
-    // popover e dialoghi si aggiungono al body: con uno aperto la penna deve arrivare al WebView
+    // popovers and dialogs are appended to body: with one open, the pen must reach the WebView
     this.observer = new MutationObserver(() => this.sync())
     this.observer.observe(document.body, { childList: true })
-    // i pannelli laterali scorrono: la loro zona si misura quando sono arrivati
+    // side panels slide in: their area is measured once they arrive
     this.onTransition = () => this.sync()
     document.addEventListener('transitionend', this.onTransition, true)
     this.sync()
@@ -39,7 +39,7 @@ export class NativeInk {
       ed.view.cancelTouches(true)
       ed.selection.drop()
       ed.inkStarted()
-      // un tasto premuto a metà tratto cambia strumento, ma il tratto resta di chi l'ha iniziato
+      // a button pressed mid-stroke switches tool, but the stroke stays with the tool that started it
       this.strokeTool = ed.tools[ed.holdTool || ed.tool]
     } else if (d.phase === 'up') {
       this.active = false
@@ -49,7 +49,7 @@ export class NativeInk {
       this.strokeTool = null
       if (Array.isArray(d.points) && d.points.length >= 2) tool.commitNative?.(d.points)
       ed.toolbar.refreshHistory()
-      // il livello nativo cancella il suo tratto quando quello della pagina è pronto a comparire
+      // the native layer clears its stroke once the page's copy is ready to appear
       InkOverlay.committed({ id: d.id }).catch(() => {})
     }
   }
@@ -76,7 +76,7 @@ export class NativeInk {
     return !document.querySelector('.dialog-backdrop, .popover')
   }
 
-  // Rettangoli in px CSS rispetto al WebView: pagine visibili e zone riservate all'interfaccia.
+  // Rectangles in CSS px relative to the WebView: visible pages and areas reserved for the UI.
   config() {
     const ed = this.ed
     const v = ed.view
